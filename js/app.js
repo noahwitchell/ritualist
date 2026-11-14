@@ -23,6 +23,7 @@ const ICONS = {
   cycles: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
   lists: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6.5h10M9 12h10M9 17.5h10"/><circle cx="5" cy="6.5" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="5" cy="17.5" r="1"/></svg>',
   progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 19V13M10 19V8M15 19v-4M20 19V5"/></svg>',
+  gearTab: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   gear: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   dots: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
 };
@@ -36,10 +37,12 @@ function shell() {
     </section>
     <section class="view hidden" data-view="lists"></section>
     <section class="view hidden" data-view="progress"></section>
+    <section class="view hidden" data-view="settings"></section>
     <nav class="tabs"><div class="inner">
-      <button data-act="tab" data-tab="cycles">${ICONS.cycles}Repeat</button>
+      <button data-act="tab" data-tab="cycles">${ICONS.cycles}Recurring</button>
       <button data-act="tab" data-tab="lists">${ICONS.lists}Lists</button>
       <button data-act="tab" data-tab="progress">${ICONS.progress}Progress</button>
+      <button data-act="tab" data-tab="settings">${ICONS.gearTab}Settings</button>
     </div></nav>`;
   const pager = app.querySelector('.pager');
   let raf = 0;
@@ -56,6 +59,7 @@ function shell() {
 function paintStrip() {
   const n = now();
   app.querySelector('#cycle-title').textContent = C.CYCLE[ui.cycle].name;
+  app.querySelector('[data-view="cycles"]').style.setProperty('--c', `var(--${ui.cycle})`);
   for (const b of app.querySelectorAll('.strip button')) {
     b.classList.toggle('on', b.dataset.cy === ui.cycle);
     const p = C.cycleProgress(S, b.dataset.cy, n);
@@ -84,6 +88,7 @@ function render() {
   if (ui.tab === 'cycles') { for (const c of C.CYCLE_IDS) renderPage(c); paintStrip(); }
   if (ui.tab === 'lists') renderLists();
   if (ui.tab === 'progress') renderProgress();
+  if (ui.tab === 'settings') renderSettings();
 }
 
 // ---------- repeating lists ----------
@@ -341,19 +346,17 @@ function listSheet(id) {
 
 // ---------- free lists ----------
 
-const LIST_HINT = { inbox: 'Get it out of your head. Sort it later.', groceries: 'Tick as you shop; clear when you\'re home.', wishes: 'Gift ideas, things to save up for.' };
-
 function renderLists() {
   const v = app.querySelector('[data-view="lists"]');
   if (ui.listId && !C.findList(S, ui.listId)) ui.listId = null;
   if (!ui.listId) {
     v.innerHTML = `<header class="head"><h1>Lists</h1></header>
       <div class="scroll"><p class="muted" style="margin:4px 4px 14px">Lists with no schedule: brain dumps, groceries, wish lists.</p>
-      <div class="card lists">${S.lists.map(l => {
+      ${S.lists.length ? `<div class="card lists">${S.lists.map(l => {
         const open = l.items.filter(i => !i.done).length;
-        return `<button class="list-row" data-act="open-list" data-id="${l.id}"><span class="ic">${l.icon}</span><span class="nm">${esc(l.name)}<span class="note-line">${esc(LIST_HINT[l.id] || '')}</span></span><span class="ct">${open || ''}</span><span class="chev">›</span></button>`;
-      }).join('')}
-      <button class="list-row" data-act="new-list"><span class="ic" style="color:var(--accent);font-size:26px">+</span><span class="nm" style="color:var(--accent)">New list</span></button></div></div>`;
+        return `<button class="list-row" data-act="open-list" data-id="${l.id}"><span class="ic">${l.icon}</span><span class="nm">${esc(l.name)}</span><span class="ct">${open || ''}</span><span class="chev">›</span></button>`;
+      }).join('')}</div>` : '<div class="empty"><b>Nothing here yet.</b>Start a list for whatever is on your mind.</div>'}
+      <button class="btn pri new-list" data-act="new-list">+ New list</button></div>`;
     return;
   }
   const l = C.findList(S, ui.listId);
@@ -365,7 +368,7 @@ function renderLists() {
       <div style="display:flex;justify-content:space-between;align-items:center"><button class="back" data-act="lists-home">‹ Lists</button><button class="icon-btn" data-act="edit-list" aria-label="List options">${ICONS.dots}</button></div>
       <h1>${l.icon} ${esc(l.name)}</h1></header>
     <div class="scroll" style="${cvar('month')}">
-      ${l.id === 'inbox' && !l.items.length ? '<div class="empty"><b>Empty your head here.</b>Type anything as it comes to you. Later, tap an item to make it repeat or move it to another list.</div><div style="height:12px"></div>' : ''}
+      ${!l.items.length ? '<div class="empty"><b>Empty your head here.</b>Type anything as it comes to you. Later, tap an item to make it recurring or move it to another list.</div><div style="height:12px"></div>' : ''}
       <ul class="items card">${active.map(row).join('')}<li><form class="add${active.length ? '' : ' first'}" data-list="${l.id}"><span class="plus">+</span><input name="t" placeholder="Add an item" autocomplete="off" enterkeyhint="done"></form></li></ul>
       ${done.length ? `<div class="section-label">Done · ${done.length}<button data-act="clear-done">Clear</button></div><ul class="items card done-list">${done.map(row).join('')}</ul>` : ''}
     </div>`;
@@ -431,7 +434,7 @@ function renderProgress() {
 
   const others = ['week', 'month', 'quarter', 'half', 'year'].map(cy => ({ cy, ...C.cycleProgress(S, cy, n) })).filter(x => x.total);
 
-  v.innerHTML = `<header class="head"><h1>Progress</h1><button class="icon-btn" data-act="settings" aria-label="Settings">${ICONS.gear}</button></header>
+  v.innerHTML = `<header class="head"><h1>Progress</h1></header>
   <div class="scroll">
     <div class="card hero">
       <div class="ring">${ringSVG(day.total ? day.done / day.total : 0, 'day')}<div class="lbl"><div>${day.done}/${day.total}<small>today</small></div></div></div>
@@ -473,7 +476,8 @@ function renderProgress() {
 
 // ---------- settings ----------
 
-async function settingsSheet() {
+async function renderSettings() {
+  const v = app.querySelector('[data-view="settings"]');
   const st = await Push.status();
   const r = S.settings.reminders;
   const n = now();
@@ -487,8 +491,9 @@ async function settingsSheet() {
       ${st.synced ? '' : '<p class="muted" style="margin:10px 2px 0">Couldn\'t reach the reminder service yet. Ritualist will try again next time it opens.</p>'}
       <div class="btns" style="margin-top:10px"><button class="btn" data-act="push-ping">Send a test from the server</button><button class="btn danger" data-act="push-off">Turn reminders off</button></div>`,
   }[st.state];
-  openSheet(`<h2>Settings</h2>
-    <div class="lbl">Reminders</div>
+  if (ui.tab !== 'settings') return;
+  v.innerHTML = `<header class="head"><h1>Settings</h1></header><div class="scroll settings">
+    <div class="lbl" style="margin-top:0">Reminders</div>
     ${pushBlock}
     <div class="lbl">Reminder times</div>
     <div class="times">${['morning', 'midday', 'evening'].map(k => `<label>${k[0].toUpperCase() + k.slice(1)}<input type="time" data-time="${k}" value="${esc(r[k])}"></label>`).join('')}</div>
@@ -502,7 +507,7 @@ async function settingsSheet() {
       <label class="btn" style="cursor:pointer">Restore from backup<input type="file" accept="application/json,.json" id="restore" hidden></label>
       <button class="btn danger hold" data-hold="wipe">Hold to erase everything</button>
     </div>
-    <p class="muted" style="text-align:center;margin-top:18px">Ritualist · a day starts at 3 AM, weeks start Monday</p>`);
+    <p class="muted" style="text-align:center;margin-top:18px">Ritualist · a day starts at 3 AM, weeks start Monday</p></div>`;
 }
 
 // ---------- events ----------
@@ -541,12 +546,17 @@ app.addEventListener('click', async e => {
     case 'new-list': listSheet(null); break;
     case 'edit-list': listSheet(ui.listId); break;
     case 'clear-done': C.clearDone(S, ui.listId); commit(); renderLists(); break;
-    case 'settings': settingsSheet(); break;
     case 'restore': C.restoreTask(S, b.closest('[data-id]').dataset.id, now()); commit(); toast('Welcome back.'); render(); break;
   }
 });
 
-sheetBody.addEventListener('click', async e => {
+// Sheet controls also work in the Settings tab.
+function onBoth(type, fn) {
+  sheetBody.addEventListener(type, fn);
+  app.addEventListener(type, e => { if (e.target.closest?.('[data-view="settings"]')) fn(e); });
+}
+
+onBoth('click', async e => {
   const b = e.target.closest('[data-act]');
   if (!b) return;
   const act = b.dataset.act;
@@ -589,9 +599,9 @@ sheetBody.addEventListener('click', async e => {
     }
     case 'push-on': {
       try { await Push.enable(S.settings.reminders); } catch (err) { toast('Couldn\'t turn on reminders: ' + err.message); }
-      settingsSheet(); break;
+      renderSettings(); break;
     }
-    case 'push-off': await Push.disable(); settingsSheet(); break;
+    case 'push-off': await Push.disable(); renderSettings(); break;
     case 'push-ping': {
       try { await Push.ping(); toast('Sent from the server. It should arrive in a few seconds.'); }
       catch (err) { toast('Couldn\'t reach the reminder service: ' + err.message); }
@@ -606,13 +616,13 @@ sheetBody.addEventListener('click', async e => {
   }
 });
 
-sheetBody.addEventListener('change', async e => {
+onBoth('change', async e => {
   if (e.target.dataset.time) { S.settings.reminders[e.target.dataset.time] = e.target.value; commit(); Push.sync(S.settings.reminders).catch(() => {}); }
   if (e.target.id === 'restore' && e.target.files[0]) {
     try {
       const data = JSON.parse(await e.target.files[0].text());
       if (!Array.isArray(data.tasks)) throw new Error('not a Ritualist backup');
-      S = C.normalize(data); commit(); closeSheet(); toast('Backup restored.');
+      S = C.normalize(data); commit(); closeSheet(); render(); toast('Backup restored.');
     } catch (err) { toast('That file isn\'t a Ritualist backup.'); }
   }
 });
@@ -624,7 +634,7 @@ sheetBody.addEventListener('keydown', e => {
 
 // Hold to confirm anything that removes data.
 let holdTimer = null;
-sheetBody.addEventListener('pointerdown', e => {
+onBoth('pointerdown', e => {
   const b = e.target.closest('[data-hold]');
   if (!b) return;
   b.classList.add('holding');
@@ -633,13 +643,14 @@ sheetBody.addEventListener('pointerdown', e => {
     const what = b.dataset.hold, id = b.closest('[data-id]')?.dataset.id;
     if (what === 'delete-task') { C.deleteTask(S, id); commit(); sheet._onClose = null; closeSheet(); toast('Deleted.'); }
     if (what === 'list-delete') { S.lists = S.lists.filter(l => l.id !== sheet._listId); ui.listId = null; commit(); sheet._onClose = null; closeSheet(); }
-    if (what === 'wipe') { S = C.emptyState(); commit(); sheet._onClose = null; closeSheet(); toast('Erased. Fresh start.'); }
+    if (what === 'wipe') { S = C.emptyState(); commit(); sheet._onClose = null; closeSheet(); render(); toast('Erased. Fresh start.'); }
   }, 800);
 });
-const cancelHold = () => { clearTimeout(holdTimer); for (const x of sheetBody.querySelectorAll('.holding')) x.classList.remove('holding'); };
-sheetBody.addEventListener('pointerup', cancelHold);
+const cancelHold = () => { clearTimeout(holdTimer); for (const x of document.querySelectorAll('.holding')) x.classList.remove('holding'); };
+onBoth('pointerup', cancelHold);
+onBoth('pointercancel', cancelHold);
 sheetBody.addEventListener('pointerleave', cancelHold);
-sheetBody.addEventListener('pointercancel', cancelHold);
+app.addEventListener('pointerout', e => { if (e.target.closest?.('[data-hold]')) cancelHold(); });
 
 app.addEventListener('submit', e => {
   e.preventDefault();

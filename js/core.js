@@ -79,11 +79,7 @@
     return {
       v: 1,
       tasks: [],      // repeating tasks: { id, title, cycle, spans:[{cycle,from,to}], done:{key:ts}, star, retired, snooze, created }
-      lists: [        // free lists, no schedule
-        { id: 'inbox', name: 'Brain dump', icon: '💭', items: [] },
-        { id: 'groceries', name: 'Groceries', icon: '🛒', items: [] },
-        { id: 'wishes', name: 'Wish list', icon: '🎁', items: [] },
-      ],
+      lists: [],      // free lists, no schedule: { id, name, icon, items }
       events: [],     // how the lists changed: { t, type, id, title, from, to, via }
       unlocked: {},   // achievement id -> ymd first earned
       counters: { itemsChecked: 0 },
@@ -97,6 +93,9 @@
     if (!raw || typeof raw !== 'object' || !Array.isArray(raw.tasks)) return base;
     const s = { ...base, ...raw };
     s.lists = Array.isArray(raw.lists) ? raw.lists : base.lists;
+    // The three starter lists early versions made are dropped if they were never used.
+    const STARTERS = { inbox: 'Brain dump', groceries: 'Groceries', wishes: 'Wish list' };
+    s.lists = s.lists.filter(l => !(STARTERS[l.id] === l.name && !(l.items || []).length));
     s.events = Array.isArray(raw.events) ? raw.events : [];
     s.unlocked = raw.unlocked || {};
     s.counters = { ...base.counters, ...raw.counters };

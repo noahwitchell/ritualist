@@ -1,50 +1,39 @@
+/* Fonts live in fonts/ so the app works offline. To try another face, change --display / --text. */
+@font-face { font-family: 'Fraunces'; src: url(../fonts/fraunces.woff2) format('woff2'); font-weight: 300 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Fraunces'; src: url(../fonts/fraunces-italic.woff2) format('woff2'); font-weight: 300 800; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url(../fonts/figtree.woff2) format('woff2'); font-weight: 400 800; font-style: normal; font-display: swap; }
+
+/* Dark only: a warm night palette with one jewel colour per cycle. */
 :root {
-  --bg: #f5f2ec;
-  --card: #fffdf9;
-  --ink: #1f1c18;
-  --ink2: #5d574f;
-  --muted: #9a938a;
-  --line: #e6e0d6;
-  --soft: #ece7de;
-  --shadow: 0 1px 2px rgba(40, 30, 20, .06), 0 6px 20px rgba(40, 30, 20, .06);
-  --day: #e0812f;
-  --week: #3f9468;
-  --month: #3a78c9;
-  --quarter: #8559c4;
-  --half: #cc4f78;
-  --year: #ad8524;
-  --good: #3f9468;
-  --accent: var(--day);
-  --r: 14px;
+  --display: 'Fraunces', ui-serif, Georgia, serif;
+  --text: 'Figtree', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --bg: #12100e;
+  --card: #1c1916;
+  --card2: #24201c;
+  --ink: #f6efe4;
+  --ink2: #cbc1b3;
+  --muted: #8b8276;
+  --line: #2c2823;
+  --soft: #2a2621;
+  --shadow: 0 1px 0 rgba(255, 240, 220, .04) inset, 0 10px 30px rgba(0, 0, 0, .35);
+  --day: #ff9a52;
+  --week: #4fd1a1;
+  --month: #6ea8ff;
+  --quarter: #b48cff;
+  --half: #ff6f9f;
+  --year: #f2c14e;
+  --good: #4fd1a1;
+  --accent: #ff9a52;
+  --r: 18px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131210;
-    --card: #1d1b18;
-    --ink: #f1ece4;
-    --ink2: #c3bcb1;
-    --muted: #8a8378;
-    --line: #2d2a26;
-    --soft: #26231f;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
-    --day: #f09a4c;
-    --week: #5fb487;
-    --month: #6a9ee6;
-    --quarter: #a685dd;
-    --half: #e47498;
-    --year: #d1aa45;
-    --good: #5fb487;
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
 body {
-  font: 17px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  font: 17px/1.38 var(--text);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   overscroll-behavior: none;
@@ -255,3 +244,112 @@ textarea.field { min-height: 70px; resize: vertical; font-size: 15px; }
 @keyframes drop { to { transform: translateY(105vh) rotate(540deg); opacity: .2; } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ================= theme: type, colour, whimsy ================= */
+
+/* A soft glow of the current colour behind each header. */
+.view { position: relative; isolation: isolate; overflow: hidden; }
+.view::before {
+  content: ""; position: absolute; z-index: -1; left: -20%; right: -20%; top: -140px; height: 340px; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c, var(--accent)) 30%, transparent), transparent 70%);
+  filter: blur(10px); opacity: .9; transition: background .5s;
+}
+[data-view="lists"] { --c: var(--month); }
+[data-view="progress"] { --c: var(--quarter); }
+[data-view="settings"] { --c: var(--half); }
+
+.head h1 {
+  font-family: var(--display); font-weight: 600; font-size: 38px; letter-spacing: -.01em;
+  font-variation-settings: "SOFT" 100, "WONK" 1, "opsz" 96;
+}
+.sheet h2, .hero-text h2, .empty b, .banner b, .note h3 {
+  font-family: var(--display); font-weight: 600; font-variation-settings: "SOFT" 100, "opsz" 36; letter-spacing: 0;
+}
+.sheet h2 { font-size: 26px; }
+.period { font-size: 15px; }
+.period b { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 19px; color: var(--c); font-variation-settings: "SOFT" 100, "WONK" 1; }
+
+/* Cycle pills: each in its own colour, a little glow when chosen. */
+.strip { gap: 6px; padding: 10px 16px 8px; }
+.strip button { color: color-mix(in srgb, var(--c) 70%, var(--muted)); background: color-mix(in srgb, var(--c) 9%, transparent); }
+.strip button.on { color: #17130f; background: var(--c); box-shadow: 0 4px 18px color-mix(in srgb, var(--c) 45%, transparent); }
+
+.bar { height: 6px; border-radius: 3px; }
+.bar i { border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 60%, #fff 0%), var(--c)); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 60%, transparent); }
+
+/* Cards: lifted, with a hairline of light on top. */
+.card, .note, .chip, .btn, .preview, .toggle-row, .seg button, .emojis button {
+  background: linear-gradient(180deg, var(--card2), var(--card)); box-shadow: var(--shadow);
+}
+.row, .add, .list-row, .habit { border-top-color: rgba(255, 240, 220, .05); }
+
+/* The check: a ring in the cycle colour that pops and sparkles when ticked. */
+.check { border-color: color-mix(in srgb, var(--c) 55%, var(--line)); }
+.row.is-done .check, .row.ticking .check { box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent); }
+.check::after { border-color: #17130f; }
+.check::before {
+  content: ""; position: absolute; inset: -9px; border-radius: 50%; pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(circle, var(--c) 1.6px, transparent 2.4px) 50% 0 / 6px 6px no-repeat,
+    radial-gradient(circle, var(--c) 1.6px, transparent 2.4px) 100% 50% / 6px 6px no-repeat,
+    radial-gradient(circle, var(--c) 1.6px, transparent 2.4px) 50% 100% / 6px 6px no-repeat,
+    radial-gradient(circle, var(--c) 1.6px, transparent 2.4px) 0 50% / 6px 6px no-repeat,
+    radial-gradient(circle, var(--ink) 1.2px, transparent 2px) 85% 15% / 5px 5px no-repeat,
+    radial-gradient(circle, var(--ink) 1.2px, transparent 2px) 15% 85% / 5px 5px no-repeat;
+}
+.row.ticking .check { animation: pop .38s cubic-bezier(.3, 1.6, .5, 1); }
+.row.ticking .check::before { animation: sparkle .55s ease-out; }
+@keyframes pop { 40% { transform: scale(1.22); } }
+@keyframes sparkle { 0% { opacity: 1; transform: scale(.5) rotate(0); } 100% { opacity: 0; transform: scale(1.45) rotate(25deg); } }
+
+.star { color: var(--year); text-shadow: 0 0 10px color-mix(in srgb, var(--year) 60%, transparent); }
+.meta.hot::before { content: "🔥 "; }
+
+.note { border-left: 0; position: relative; overflow: hidden; }
+.note::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); box-shadow: 0 0 16px var(--c); }
+.note.praise::before { background: var(--good); box-shadow: 0 0 16px var(--good); }
+.note .acts button { background: rgba(255, 240, 220, .07); }
+.note .acts button.pri, .chip.on, .seg button.on { background: var(--c); color: #17130f; }
+
+.banner {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--c) 30%, var(--card)), color-mix(in srgb, var(--year) 18%, var(--card)));
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--c) 25%, transparent);
+}
+.banner .big { animation: wiggle 1.6s ease-in-out 2; display: inline-block; }
+@keyframes wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg) scale(1.1); } 75% { transform: rotate(10deg); } }
+
+.empty b { font-size: 22px; }
+.chip { color: var(--ink); }
+
+/* Floating tab bar. */
+.tabs { background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0 14px calc(var(--safe-b) + 10px); pointer-events: none; }
+.tabs .inner {
+  pointer-events: auto; max-width: 420px; padding: 7px; border-radius: 26px; gap: 2px;
+  background: color-mix(in srgb, #1f1b17 82%, transparent); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: 0 1px 0 rgba(255, 240, 220, .06) inset, 0 12px 40px rgba(0, 0, 0, .5);
+}
+.tabs button { border-radius: 19px; padding: 6px 0 5px; font-size: 10.5px; transition: color .2s, background .2s; }
+.tabs button svg { width: 23px; height: 23px; }
+.tabs button.on { color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, transparent); }
+.tabs button[data-tab="lists"].on { --accent: var(--month); }
+.tabs button[data-tab="progress"].on { --accent: var(--quarter); }
+.tabs button[data-tab="settings"].on { --accent: var(--half); }
+
+.btn.pri { background: linear-gradient(135deg, var(--c, var(--accent)), color-mix(in srgb, var(--c, var(--accent)) 70%, var(--year))); color: #17130f; box-shadow: 0 6px 22px color-mix(in srgb, var(--c, var(--accent)) 35%, transparent); }
+.btn.danger { color: #ff7a6b; }
+.new-list { width: 100%; margin-top: 14px; }
+
+.ring .lbl, .stat b { font-family: var(--display); font-weight: 600; font-variation-settings: "SOFT" 100; }
+.stat b { font-size: 28px; }
+.badge .med { box-shadow: 0 0 18px color-mix(in srgb, var(--year) 30%, transparent); }
+
+.sheet { background: rgba(0, 0, 0, .55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.sheet-body { background: #171411; box-shadow: 0 -1px 0 rgba(255, 240, 220, .06), 0 -20px 60px rgba(0, 0, 0, .5); }
+
+/* Settings is a tab now; give it the sheet's form styles. */
+.settings .lbl { font-size: 13px; font-weight: 600; color: var(--muted); margin: 22px 0 8px; text-transform: uppercase; letter-spacing: .05em; }
+.toast { background: var(--ink); color: #17130f; font-weight: 600; }
+.btn.pri { background: linear-gradient(135deg, color-mix(in srgb, var(--c, var(--accent)) 80%, #fff), var(--c, var(--accent))); }
+.ring .lbl small { font-family: var(--text); }
+.times input { font-size: 15px; }
+.times input::-webkit-calendar-picker-indicator { display: none; }

@@ -132,17 +132,29 @@ test('weekly sweep and comeback', () => {
 
 test('free lists and brain dump', () => {
   const s = C.emptyState();
-  const it = C.addItem(s, 'inbox', 'Renew passport', at('2026-11-01'));
-  C.addItem(s, 'inbox', 'Water plants', at('2026-11-01'));
-  const t = C.itemToTask(s, 'inbox', C.findList(s, 'inbox').items[1].id, 'week', at('2026-11-01'));
+  assert.equal(s.lists.length, 0);
+  const a = C.addList(s, 'Brain dump', '💭', at('2026-11-01')).id;
+  const b = C.addList(s, 'Wish list', '🎁', at('2026-11-01')).id;
+  const it = C.addItem(s, a, 'Renew passport', at('2026-11-01'));
+  C.addItem(s, a, 'Water plants', at('2026-11-01'));
+  const t = C.itemToTask(s, a, C.findList(s, a).items[1].id, 'week', at('2026-11-01'));
   assert.equal(t.title, 'Water plants');
-  assert.equal(C.findList(s, 'inbox').items.length, 1);
-  C.moveItem(s, 'inbox', it.id, 'wishes');
-  assert.equal(C.findList(s, 'wishes').items[0].title, 'Renew passport');
-  C.toggleItem(s, 'wishes', it.id, at('2026-11-02'));
+  assert.equal(C.findList(s, a).items.length, 1);
+  C.moveItem(s, a, it.id, b);
+  assert.equal(C.findList(s, b).items[0].title, 'Renew passport');
+  C.toggleItem(s, b, it.id, at('2026-11-02'));
   assert.equal(s.counters.itemsChecked, 1);
-  C.clearDone(s, 'wishes');
-  assert.equal(C.findList(s, 'wishes').items.length, 0);
+  C.clearDone(s, b);
+  assert.equal(C.findList(s, b).items.length, 0);
+});
+
+test('unused starter lists from early versions are dropped, used ones kept', () => {
+  const s = C.normalize({ tasks: [], lists: [
+    { id: 'inbox', name: 'Brain dump', icon: '💭', items: [] },
+    { id: 'groceries', name: 'Groceries', icon: '🛒', items: [{ id: 'x', title: 'Milk' }] },
+    { id: 'wishes', name: 'Wish list', icon: '🎁', items: [] },
+  ] });
+  assert.deepEqual(s.lists.map(l => l.id), ['groceries']);
 });
 
 test('reminder briefs', () => {
@@ -170,7 +182,7 @@ test('reminder briefs', () => {
 });
 
 test('normalize keeps data and fills gaps', () => {
-  assert.equal(C.normalize(null).lists.length, 3);
+  assert.equal(C.normalize(null).lists.length, 0);
   const s = C.normalize({ tasks: [{ id: 'x', title: 'A', cycle: 'day', created: '2026-11-01' }], settings: {} });
   assert.equal(s.tasks[0].spans[0].from, '2026-11-01');
   assert.equal(s.settings.reminders.morning, '07:30');
