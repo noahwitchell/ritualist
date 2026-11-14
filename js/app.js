@@ -50,11 +50,15 @@ function shell() {
   pager.addEventListener('scroll', () => {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      const i = Math.round(pager.scrollLeft / pager.clientWidth);
-      const cy = C.CYCLE_IDS[Math.max(0, Math.min(5, i))];
+      const i = Math.max(0, Math.min(5, Math.round(pager.scrollLeft / pager.clientWidth)));
+      // While a tap-driven slide is on its way, the pages it passes over don't count;
+      // otherwise the title flips back to the old cycle mid-slide.
+      if (sliding) { if (i === C.CYCLE_IDS.indexOf(sliding)) endSlide(); return; }
+      const cy = C.CYCLE_IDS[i];
       if (cy !== ui.cycle) { ui.cycle = cy; saveUI(ui); paintStrip(); }
     });
   }, { passive: true });
+  pager.addEventListener('scrollend', endSlide);
 }
 
 function paintStrip() {
@@ -70,8 +74,12 @@ function paintStrip() {
   on?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
+let sliding = null, slideTimer = 0;
+function endSlide() { sliding = null; clearTimeout(slideTimer); }
+
 function goto(cy, smooth = true) {
   ui.cycle = cy; saveUI(ui);
+  if (smooth) { sliding = cy; clearTimeout(slideTimer); slideTimer = setTimeout(endSlide, 1200); }
   const pager = app.querySelector('.pager');
   pager.scrollTo({ left: C.CYCLE_IDS.indexOf(cy) * pager.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
   paintStrip();
