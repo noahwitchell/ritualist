@@ -1,6 +1,6 @@
 {
-  "name": "Cadence",
-  "short_name": "Cadence",
+  "name": "Ritualist",
+  "short_name": "Ritualist",
   "description": "Lists that repeat: daily, weekly, monthly and beyond, with gentle check-ins.",
   "start_url": "./",
   "scope": "./",

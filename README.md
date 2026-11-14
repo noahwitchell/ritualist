@@ -1,4 +1,4 @@
-# Cadence
+# Ritualist
 
 Lists that repeat, and notice how you're doing.
 

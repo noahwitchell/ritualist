@@ -2,8 +2,8 @@
 // so the service worker can read the lists when a reminder push wakes it.
 import './core.js';
 const C = globalThis.Core;
-const KEY = 'cadence.v1';
-const UI_KEY = 'cadence.ui';
+const KEY = 'ritualist.v1';
+const UI_KEY = 'ritualist.ui';
 
 export function load() {
   try { return C.normalize(JSON.parse(localStorage.getItem(KEY))); } catch { return C.emptyState(); }
@@ -18,7 +18,7 @@ export function save(state) {
 
 export async function mirror(state) {
   try {
-    const c = await caches.open('cadence-data');
+    const c = await caches.open('ritualist-data');
     await c.put(new Request('state.json'), new Response(JSON.stringify(state), { headers: { 'content-type': 'application/json' } }));
   } catch { /* no Cache Storage (file:// or private mode) */ }
 }

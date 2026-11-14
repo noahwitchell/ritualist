@@ -1,4 +1,4 @@
-// Cadence reminder sender (Cloudflare Worker + D1).
+// Ritualist reminder sender (Cloudflare Worker + D1).
 //
 // Phones sign up themselves: the app POSTs its push subscription, its three reminder times
 // and its time zone. Once a minute the cron checks who has a reminder due and sends that
@@ -9,7 +9,7 @@
 //   POST /unsubscribe  { endpoint }
 //   POST /ping         { endpoint }   sends one push now (signed-up phones only)
 
-const SUBJECT = 'https://noahwitchell.github.io/cadence/';
+const SUBJECT = 'https://noahwitchell.github.io/ritualist/';
 const SLOTS = ['morning', 'midday', 'evening'];
 const LATE_OK = 30; // minutes: a reminder missed by an outage is still sent if this recent
 const PUSH_HOSTS = /(^|\.)(push\.apple\.com|fcm\.googleapis\.com|push\.services\.mozilla\.com|notify\.windows\.com)$/;
@@ -141,7 +141,7 @@ export default {
   async fetch(req, env) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
     const path = new URL(req.url).pathname;
-    if (req.method === 'GET' && path === '/') return new Response('Cadence reminders are running.', { headers: CORS });
+    if (req.method === 'GET' && path === '/') return new Response('Ritualist reminders are running.', { headers: CORS });
     if (req.method !== 'POST') return json({ error: 'not found' }, 404);
     let b;
     try { b = await readBody(req); } catch { return json({ error: 'bad request' }, 400); }

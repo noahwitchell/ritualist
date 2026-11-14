@@ -2,7 +2,7 @@
 // its three reminder times and its time zone to the sender (worker/, on Cloudflare).
 // Pushes carry no content: the service worker writes each reminder from the local lists.
 
-export const SENDER = 'https://cadence-reminders.noahschmoah.workers.dev';
+export const SENDER = 'https://ritualist-reminders.noahschmoah.workers.dev';
 export const VAPID_PUBLIC = 'BNAIiw93D3qWenKw0QSlMCMFrOTABWnuREiLBd_tUfX_jp3RNhugLeFpu4PrG54EHyWon0KdeT61FsNcDKSNPSM';
 
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -12,7 +12,7 @@ const bytes = b64 => {
   const s = atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - b64.length % 4) % 4));
   return Uint8Array.from(s, ch => ch.charCodeAt(0));
 };
-const SYNCED = 'cadence.push';
+const SYNCED = 'ritualist.push';
 const zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const post = (path, body) => fetch(SENDER + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   .then(r => { if (!r.ok) throw new Error('reminder service said ' + r.status); return r; });

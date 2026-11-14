@@ -1,4 +1,4 @@
-// Cadence rules. Pure functions over plain data, no DOM.
+// Ritualist rules. Pure functions over plain data, no DOM.
 // A classic script (no import/export) so the page, the service worker (importScripts)
 // and node tests can all load it. Everything hangs off globalThis.Core.
 (function (root) {

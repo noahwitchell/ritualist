@@ -1,8 +1,8 @@
 // Offline cache + reminders. A push arrives empty; this worker reads the lists the app
 // saved to Cache Storage and writes the reminder itself, so list contents never leave the phone.
 importScripts('js/core.js');
-const CACHE = 'cadence-v2';
-const DATA = 'cadence-data';
+const CACHE = 'ritualist-v1';
+const DATA = 'ritualist-data';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
@@ -35,7 +35,7 @@ async function showBrief(slot) {
     body: b.body,
     icon: 'icons/icon-192.png',
     badge: 'icons/icon-192.png',
-    tag: 'cadence-brief', // a new reminder replaces the last one
+    tag: 'ritualist-brief', // a new reminder replaces the last one
     data: { url: './' },
   });
 }

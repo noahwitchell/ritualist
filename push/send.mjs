@@ -10,7 +10,7 @@ import { createPrivateKey, sign } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 
 const PUBLIC = 'BNAIiw93D3qWenKw0QSlMCMFrOTABWnuREiLBd_tUfX_jp3RNhugLeFpu4PrG54EHyWon0KdeT61FsNcDKSNPSM';
-const SUBJECT = 'https://noahwitchell.github.io/cadence/';
+const SUBJECT = 'https://noahwitchell.github.io/ritualist/';
 
 const b64u = buf => Buffer.from(buf).toString('base64url');
 

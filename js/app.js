@@ -479,12 +479,12 @@ async function settingsSheet() {
   const n = now();
   const pv = slot => { const b = C.brief(S, slot, n); return `<div class="preview"><b>${esc(b.title)}</b><span>${esc(b.body)}</span></div>`; };
   const pushBlock = {
-    install: '<p class="muted">Reminders work from the installed app. In Safari tap <b>Share</b> → <b>Add to Home Screen</b>, then open Cadence from your Home Screen and come back here.</p>',
-    unsupported: '<p class="muted">This browser can\'t receive reminders. On iPhone, add Cadence to your Home Screen (iOS 16.4 or newer).</p>',
-    denied: '<p class="muted">Notifications are blocked for Cadence. Turn them on in Settings → Notifications → Cadence.</p>',
+    install: '<p class="muted">Reminders work from the installed app. In Safari tap <b>Share</b> → <b>Add to Home Screen</b>, then open Ritualist from your Home Screen and come back here.</p>',
+    unsupported: '<p class="muted">This browser can\'t receive reminders. On iPhone, add Ritualist to your Home Screen (iOS 16.4 or newer).</p>',
+    denied: '<p class="muted">Notifications are blocked for Ritualist. Turn them on in Settings → Notifications → Ritualist.</p>',
     off: '<button class="btn pri" data-act="push-on">Turn on reminders</button>',
     on: `<div class="toggle-row"><span>Reminders are on for this phone</span><span style="color:var(--good)">●</span></div>
-      ${st.synced ? '' : '<p class="muted" style="margin:10px 2px 0">Couldn\'t reach the reminder service yet. Cadence will try again next time it opens.</p>'}
+      ${st.synced ? '' : '<p class="muted" style="margin:10px 2px 0">Couldn\'t reach the reminder service yet. Ritualist will try again next time it opens.</p>'}
       <div class="btns" style="margin-top:10px"><button class="btn" data-act="push-ping">Send a test from the server</button><button class="btn danger" data-act="push-off">Turn reminders off</button></div>`,
   }[st.state];
   openSheet(`<h2>Settings</h2>
@@ -502,7 +502,7 @@ async function settingsSheet() {
       <label class="btn" style="cursor:pointer">Restore from backup<input type="file" accept="application/json,.json" id="restore" hidden></label>
       <button class="btn danger hold" data-hold="wipe">Hold to erase everything</button>
     </div>
-    <p class="muted" style="text-align:center;margin-top:18px">Cadence · a day starts at 3 AM, weeks start Monday</p>`);
+    <p class="muted" style="text-align:center;margin-top:18px">Ritualist · a day starts at 3 AM, weeks start Monday</p>`);
 }
 
 // ---------- events ----------
@@ -600,7 +600,7 @@ sheetBody.addEventListener('click', async e => {
     case 'preview': await mirror(S); await Push.showPreview(b.dataset.slot); toast('Sent. Check your notifications.'); break;
     case 'backup': {
       const d = C.ymd(C.today(now()));
-      await deliverFile(`cadence-backup-${d}.json`, JSON.stringify(S, null, 1), 'application/json');
+      await deliverFile(`ritualist-backup-${d}.json`, JSON.stringify(S, null, 1), 'application/json');
       break;
     }
   }
@@ -611,9 +611,9 @@ sheetBody.addEventListener('change', async e => {
   if (e.target.id === 'restore' && e.target.files[0]) {
     try {
       const data = JSON.parse(await e.target.files[0].text());
-      if (!Array.isArray(data.tasks)) throw new Error('not a Cadence backup');
+      if (!Array.isArray(data.tasks)) throw new Error('not a Ritualist backup');
       S = C.normalize(data); commit(); closeSheet(); toast('Backup restored.');
-    } catch (err) { toast('That file isn\'t a Cadence backup.'); }
+    } catch (err) { toast('That file isn\'t a Ritualist backup.'); }
   }
 });
 
