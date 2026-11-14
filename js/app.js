@@ -343,7 +343,7 @@ function listSheet(id) {
     <input class="field" id="f-name" value="${esc(l ? l.name : '')}" placeholder="Name it: Christmas, Hardware store…" autocomplete="off">
     <div class="lbl">Icon</div>
     <div class="emojis">
-      <button data-act="pick-emoji" data-e="" class="none${icon ? '' : ' on'}" aria-label="No icon">None</button>
+      <button data-act="pick-emoji" data-e="" class="none${icon ? '' : ' on'}" aria-label="No icon"></button>
       ${Object.entries(DOTS).map(([k, v]) => `<button data-act="pick-emoji" data-e="dot:${k}" class="${icon === 'dot:' + k ? 'on' : ''}" aria-label="${k}"><i class="ldot" style="background:var(--${v})"></i></button>`).join('')}
     </div>
     <div class="emojis" style="margin-top:6px">${EMOJI.map(e => `<button data-act="pick-emoji" data-e="${e}" class="${e === icon ? 'on' : ''}">${e}</button>`).join('')}</div>
