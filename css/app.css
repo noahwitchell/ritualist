@@ -1,11 +1,11 @@
 /* Fonts live in fonts/ so the app works offline. To try another face, change --display / --text. */
-@font-face { font-family: 'DM Serif Display'; src: url(../fonts/dm-serif-display.woff2) format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'DM Serif Display'; src: url(../fonts/dm-serif-display-italic.woff2) format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Fraunces'; src: url(../fonts/fraunces.woff2) format('woff2'); font-weight: 300 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Fraunces'; src: url(../fonts/fraunces-italic.woff2) format('woff2'); font-weight: 300 800; font-style: italic; font-display: swap; }
 @font-face { font-family: 'Figtree'; src: url(../fonts/figtree.woff2) format('woff2'); font-weight: 400 800; font-style: normal; font-display: swap; }
 
 /* Dark only: a warm night palette with one jewel colour per cycle. */
 :root {
-  --display: 'DM Serif Display', ui-serif, Georgia, serif;
+  --display: 'Fraunces', ui-serif, Georgia, serif;
   --text: 'Figtree', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --bg: #12100e;
   --card: #1c1916;
@@ -259,14 +259,15 @@ textarea.field { min-height: 70px; resize: vertical; font-size: 15px; }
 [data-view="settings"] { --c: var(--half); }
 
 .head h1 {
-  font-family: var(--display); font-weight: 400; font-size: 40px; letter-spacing: -.005em;
+  font-family: var(--display); font-weight: 600; font-size: 38px; letter-spacing: -.01em;
+  font-variation-settings: "SOFT" 100, "WONK" 1, "opsz" 96;
 }
 .sheet h2, .hero-text h2, .empty b, .banner b, .note h3 {
-  font-family: var(--display); font-weight: 400; letter-spacing: .005em;
+  font-family: var(--display); font-weight: 600; font-variation-settings: "SOFT" 100, "opsz" 36; letter-spacing: 0;
 }
 .sheet h2 { font-size: 26px; }
 .period { font-size: 15px; }
-.period b { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 20px; color: var(--c); }
+.period b { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 19px; color: var(--c); font-variation-settings: "SOFT" 100, "WONK" 1; }
 
 /* Cycle pills: each in its own colour, a little glow when chosen. */
 .strip { gap: 6px; padding: 10px 16px 8px; }
@@ -338,7 +339,7 @@ textarea.field { min-height: 70px; resize: vertical; font-size: 15px; }
 .btn.danger { color: #ff7a6b; }
 .new-list { width: 100%; margin-top: 14px; }
 
-.ring .lbl, .stat b { font-family: var(--display); font-weight: 400; }
+.ring .lbl, .stat b { font-family: var(--display); font-weight: 600; font-variation-settings: "SOFT" 100; }
 .stat b { font-size: 28px; }
 .badge .med { box-shadow: 0 0 18px color-mix(in srgb, var(--year) 30%, transparent); }
 
