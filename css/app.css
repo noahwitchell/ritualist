@@ -361,3 +361,7 @@ textarea.field { min-height: 70px; resize: vertical; font-size: 15px; }
 .chip .ldot { width: 10px; height: 10px; vertical-align: 0; }
 .emojis button.none { }
 .emojis button .ldot { width: 18px; height: 18px; }
+.rkey { margin-top: 10px; padding: 14px; border-radius: 14px; background: var(--card); border: 1px dashed color-mix(in srgb, var(--c) 60%, transparent); font: 600 16px/1.6 ui-monospace, Menlo, monospace; letter-spacing: .04em; word-spacing: .2em; text-align: center; color: var(--ink); user-select: all; -webkit-user-select: all; }
+.rk-row { display: flex; gap: 8px; }
+.rk-row .field { flex: 1; min-width: 0; font: 15px ui-monospace, Menlo, monospace; }
+.rk-row .btn { flex: 0 0 auto; padding: 0 16px; }

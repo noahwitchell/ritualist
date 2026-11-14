@@ -14,3 +14,6 @@
   https://ritualist-reminders.noahschmoah.workers.dev). The app signs itself up (`Push.sync`); cron every minute.
   Deploy: `cd worker && npx wrangler@4 deploy`. Tests: `node --test worker/test.mjs`. The private key is the
   Worker secret VAPID_PRIVATE_JWK. `push/send.mjs` is the old manual sender, kept for one-off sends.
+- Daily backup (`js/backup.js`): state → gzip → AES-GCM with a 32-byte key made on the phone, shown once
+  as a Crockford-base32 recovery key; the Worker stores only ciphertext under id = SHA-256(key + tag)
+  (`/backup/put|get|delete`, table `backups`). Never send the key itself anywhere. Tests: tests/backup.test.mjs.

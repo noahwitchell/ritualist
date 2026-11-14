@@ -12,3 +12,11 @@ CREATE TABLE IF NOT EXISTS subs (
   created INTEGER NOT NULL,
   updated INTEGER NOT NULL
 );
+
+-- One encrypted backup per recovery key. The server can't read `data`: it is AES-GCM ciphertext
+-- made on the phone, and `id` is a hash of the key, not the key.
+CREATE TABLE IF NOT EXISTS backups (
+  id TEXT PRIMARY KEY,
+  data TEXT NOT NULL,
+  updated INTEGER NOT NULL
+);

@@ -1,6 +1,7 @@
 import './core.js';
 import { load, save, mirror, loadUI, saveUI, requestPersistence, deliverFile } from './store.js';
 import * as Push from './push.js';
+import * as Backup from './backup.js';
 
 const C = globalThis.Core;
 let S = load();
@@ -515,14 +516,51 @@ async function renderSettings() {
     <div class="lbl">What they'll say right now</div>
     ${pv('morning')}${pv('midday')}${pv('evening')}
     ${st.state === 'on' ? '<div class="seg" style="margin-top:10px"><button data-act="preview" data-slot="morning">Test morning</button><button data-act="preview" data-slot="midday">Test midday</button><button data-act="preview" data-slot="evening">Test evening</button></div>' : ''}
-    <div class="lbl">Your data</div>
-    <p class="muted" style="margin:0 2px 10px">Everything stays on this phone. Save a backup now and then.</p>
+    <div class="lbl">Daily backup</div>
+    ${backupBlock()}
+    <div class="lbl">Backup file</div>
     <div class="btns" style="margin-top:0">
-      <button class="btn" data-act="backup">Save backup</button>
-      <label class="btn" style="cursor:pointer">Restore from backup<input type="file" accept="application/json,.json" id="restore" hidden></label>
+      <button class="btn" data-act="backup">Save a copy to Files</button>
+      <label class="btn" style="cursor:pointer">Restore from a file<input type="file" accept="application/json,.json" id="restore" hidden></label>
       <button class="btn danger hold" data-hold="wipe">Hold to erase everything</button>
     </div>
     <p class="muted" style="text-align:center;margin-top:18px">Ritualist · a day starts at 3 AM, weeks start Monday</p></div>`;
+}
+
+function ago(ts) {
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} hour${h > 1 ? 's' : ''} ago`;
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+let revealKey = false; // show the recovery key in Settings (right after turning backup on, or on request)
+
+function backupBlock() {
+  const b = Backup.info();
+  const restore = `<p class="muted" style="margin:14px 2px 8px">Restore with a recovery key</p>
+    <div class="rk-row"><input class="field" id="rk" placeholder="XXXX-XXXX-XXXX-…" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn" data-act="restore-key">Restore</button></div>`;
+  if (!b) {
+    return `<p class="muted" style="margin:0 2px 10px">Once a day, an encrypted copy of your lists is saved online, replacing the last one. Only your recovery key can open it.</p>
+      <button class="btn pri" style="width:100%" data-act="backup-on">Turn on daily backup</button>${restore}`;
+  }
+  const key = revealKey ? `<div class="rkey">${esc(b.key)}</div>
+    <p class="muted" style="margin:8px 2px 0">Save this key in Notes or a password manager. It's the only way to open the backup; without it, nobody can.</p>
+    <div class="btns" style="margin-top:10px"><button class="btn" data-act="copy-key">Copy recovery key</button></div>` : '';
+  return `<div class="toggle-row"><span>${b.last ? `Backed up ${ago(b.last)}` : 'Not backed up yet'}</span><span style="color:var(--good)">●</span></div>
+    ${key}
+    <div class="btns" style="margin-top:10px">
+      <button class="btn" data-act="backup-now">Back up now</button>
+      ${revealKey ? '' : '<button class="btn" data-act="show-key">Show recovery key</button>'}
+      <button class="btn danger hold" data-hold="backup-delete">Hold to delete my backup</button>
+    </div>`;
+}
+
+// Once a day when the app opens or comes back. Quiet on failure; it tries again next time.
+function dailyBackup() {
+  Backup.maybeDaily(S).then(did => { if (did && ui.tab === 'settings') renderSettings(); }).catch(() => {});
 }
 
 // ---------- events ----------
@@ -616,6 +654,30 @@ onBoth('click', async e => {
       break;
     }
     case 'preview': await mirror(S); await Push.showPreview(b.dataset.slot); toast('Sent. Check your notifications.'); break;
+    case 'backup-on': {
+      try { await Backup.enable(S); revealKey = true; toast('Daily backup is on.'); }
+      catch (err) { Backup.remove().catch(() => {}); toast('Couldn\'t reach the backup service: ' + err.message); }
+      renderSettings(); break;
+    }
+    case 'backup-now': {
+      try { await Backup.backupNow(S); toast('Backed up.'); } catch (err) { toast('Couldn\'t back up: ' + err.message); }
+      renderSettings(); break;
+    }
+    case 'show-key': revealKey = true; renderSettings(); break;
+    case 'copy-key': {
+      try { await navigator.clipboard.writeText(Backup.info().key); toast('Recovery key copied.'); } catch { toast('Select the key and copy it.'); }
+      break;
+    }
+    case 'restore-key': {
+      const text = app.querySelector('#rk')?.value || '';
+      try {
+        if ((S.tasks.length || S.lists.length) && !confirm('Replace everything on this phone with the backup?')) break;
+        const r = await Backup.restore(text);
+        S = C.normalize(r.state); commit(); revealKey = false; render();
+        toast(`Restored the backup from ${ago(r.updated)}.`);
+      } catch (err) { toast(err.message); }
+      break;
+    }
     case 'backup': {
       const d = C.ymd(C.today(now()));
       await deliverFile(`ritualist-backup-${d}.json`, JSON.stringify(S, null, 1), 'application/json');
@@ -651,6 +713,10 @@ onBoth('pointerdown', e => {
     const what = b.dataset.hold, id = b.closest('[data-id]')?.dataset.id;
     if (what === 'delete-task') { C.deleteTask(S, id); commit(); sheet._onClose = null; closeSheet(); toast('Deleted.'); }
     if (what === 'list-delete') { S.lists = S.lists.filter(l => l.id !== sheet._listId); ui.listId = null; commit(); sheet._onClose = null; closeSheet(); }
+    if (what === 'backup-delete') {
+      Backup.remove().then(() => { revealKey = false; renderSettings(); toast('Backup deleted. Daily backup is off.'); })
+        .catch(err => toast('Couldn\'t delete it: ' + err.message));
+    }
     if (what === 'wipe') { S = C.emptyState(); commit(); sheet._onClose = null; closeSheet(); render(); toast('Erased. Fresh start.'); }
   }, 800);
 });
@@ -681,7 +747,7 @@ function maybeRollover() {
   if (d !== lastDay) { lastDay = d; if (sheet.classList.contains('hidden')) render(); }
 }
 setInterval(maybeRollover, 60000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { maybeRollover(); render(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { maybeRollover(); render(); dailyBackup(); } });
 window.addEventListener('resize', () => { if (ui.tab === 'cycles') goto(ui.cycle, false); });
 
 // ---------- start ----------
@@ -693,5 +759,6 @@ requestPersistence();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
   Push.sync(S.settings.reminders).catch(() => {}); // re-sends only if the address, times or zone changed
+  dailyBackup();
 }
 if (location.hash === '#progress') setTab('progress');

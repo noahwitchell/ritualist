@@ -2,7 +2,7 @@
 // its three reminder times and its time zone to the sender (worker/, on Cloudflare).
 // Pushes carry no content: the service worker writes each reminder from the local lists.
 
-export const SENDER = 'https://ritualist-reminders.noahschmoah.workers.dev';
+import { SENDER } from './config.js';
 export const VAPID_PUBLIC = 'BNAIiw93D3qWenKw0QSlMCMFrOTABWnuREiLBd_tUfX_jp3RNhugLeFpu4PrG54EHyWon0KdeT61FsNcDKSNPSM';
 
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);

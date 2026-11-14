@@ -8,6 +8,11 @@
 //   POST /subscribe    { sub, times: {morning, midday, evening}, tz }
 //   POST /unsubscribe  { endpoint }
 //   POST /ping         { endpoint }   sends one push now (signed-up phones only)
+//   POST /backup/put    { id, data }  stores a phone's encrypted backup (replaces the last one)
+//   POST /backup/get    { id }        returns it
+//   POST /backup/delete { id }        removes it
+// Backups are encrypted on the phone with a key that never comes here; `id` is a hash of
+// that key, so only someone holding the key can find, replace or delete a backup.
 
 const SUBJECT = 'https://noahwitchell.github.io/ritualist/';
 const SLOTS = ['morning', 'midday', 'evening'];
@@ -78,9 +83,11 @@ function validTz(tz) {
   try { new Intl.DateTimeFormat('en', { timeZone: tz }); return typeof tz === 'string' && tz.length < 64; } catch { return false; }
 }
 
-async function readBody(req) {
+const BACKUP_MAX = 1_500_000; // characters of encrypted base64; a year of heavy use is far smaller
+
+async function readBody(req, max = 4096) {
   const text = await req.text();
-  if (text.length > 4096) throw new Error('too big');
+  if (text.length > max) throw new Error('too big');
   return JSON.parse(text);
 }
 
@@ -117,6 +124,30 @@ async function ping(env, b) {
   return json({ ok: res.ok, status: res.status }, res.ok ? 200 : 502);
 }
 
+// ---------- encrypted backups ----------
+
+const validId = id => typeof id === 'string' && /^[A-Za-z0-9_-]{43}$/.test(id);
+
+async function backupPut(env, b) {
+  if (!validId(b.id) || typeof b.data !== 'string' || !/^[A-Za-z0-9+/=]+$/.test(b.data)) return json({ error: 'bad backup' }, 400);
+  const now = Date.now();
+  await env.DB.prepare(`INSERT INTO backups (id, data, updated) VALUES (?1, ?2, ?3)
+      ON CONFLICT(id) DO UPDATE SET data = ?2, updated = ?3`).bind(b.id, b.data, now).run();
+  return json({ ok: true, updated: now });
+}
+
+async function backupGet(env, b) {
+  if (!validId(b.id)) return json({ error: 'bad id' }, 400);
+  const row = await env.DB.prepare('SELECT data, updated FROM backups WHERE id = ?1').bind(b.id).first();
+  return row ? json({ ok: true, data: row.data, updated: row.updated }) : json({ error: 'no backup for that key' }, 404);
+}
+
+async function backupDelete(env, b) {
+  if (!validId(b.id)) return json({ error: 'bad id' }, 400);
+  await env.DB.prepare('DELETE FROM backups WHERE id = ?1').bind(b.id).run();
+  return json({ ok: true });
+}
+
 // ---------- the minute tick ----------
 
 export async function tick(env, at = new Date()) {
@@ -144,7 +175,11 @@ export default {
     if (req.method === 'GET' && path === '/') return new Response('Ritualist reminders are running.', { headers: CORS });
     if (req.method !== 'POST') return json({ error: 'not found' }, 404);
     let b;
-    try { b = await readBody(req); } catch { return json({ error: 'bad request' }, 400); }
+    try { b = await readBody(req, path === '/backup/put' ? BACKUP_MAX : 4096); } catch { return json({ error: 'bad request' }, 400); }
+    if (!b || typeof b !== 'object') return json({ error: 'bad request' }, 400);
+    if (path === '/backup/put') return backupPut(env, b);
+    if (path === '/backup/get') return backupGet(env, b);
+    if (path === '/backup/delete') return backupDelete(env, b);
     if (path === '/subscribe') return subscribe(env, b);
     if (path === '/unsubscribe') return unsubscribe(env, b);
     if (path === '/ping') return ping(env, b);
