@@ -8,7 +8,7 @@
 - Data is localStorage `ritualist.v1`. Never change its shape without a migration in `Core.normalize`.
 - Removing data = hold to confirm. Retire ("let it go") keeps history; delete is forever.
 - `push/vapid-private.json` is the push signing key: git-ignored, never commit or print it.
-- Dark only. Fonts (Fraunces display, Figtree text, OFL) live in fonts/; swap via --display/--text in css/app.css.
+- Dark only. Fonts (DM Serif Display headings, Figtree text, OFL) live in fonts/; swap via --display/--text in css/app.css.
 - Verify at phone size (390×844). Bump CACHE in sw.js when shipping.
 - Reminders are sent by `worker/` (Cloudflare Worker `ritualist-reminders` + D1 `cadence` (old internal name, unseen), Noah's account,
   https://ritualist-reminders.noahschmoah.workers.dev). The app signs itself up (`Push.sync`); cron every minute.
