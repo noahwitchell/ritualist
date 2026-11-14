@@ -74,10 +74,10 @@ test('weekly slip and praise', () => {
   const s = C.emptyState();
   const t = C.addTask(s, 'Vacuum', 'week', at('2026-10-05'));
   assert.ok(C.reflectionFor(t, at('2026-10-27')), '3 weeks missed');
-  const u = C.addTask(s, 'Call mom', 'week', at('2026-10-05'));
+  const u = C.addTask(s, 'Meal prep', 'week', at('2026-10-05'));
   for (const d of ['2026-10-06', '2026-10-13', '2026-10-20']) C.toggleTask(s, u.id, at(d));
   const p = C.praiseFor(u, at('2026-10-27'));
-  assert.equal(p.title, 'Call mom: 3 weeks in a row');
+  assert.equal(p.title, 'Meal prep: 3 weeks in a row');
   assert.doesNotMatch(p.text, /good job|keep it up/i);
 });
 

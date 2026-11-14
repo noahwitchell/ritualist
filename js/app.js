@@ -95,7 +95,7 @@ function render() {
 
 const SUGGEST = {
   day: ['Make the bed', 'Dishes', 'Laundry', 'Walk 20 minutes', 'Read 10 pages', 'Tidy up'],
-  week: ['Vacuum', 'Groceries', 'Call family', 'Water plants', 'Take out trash', 'Plan the week'],
+  week: ['Vacuum', 'Groceries', 'Meal prep', 'Water plants', 'Take out trash', 'Plan the week'],
   month: ['Pay bills', 'Change the sheets', 'Clean the fridge', 'Check the budget', 'Deep clean bathroom'],
   quarter: ['Change HVAC filter', 'Review subscriptions', 'Haircut', 'Declutter a closet'],
   half: ['Dentist', 'Rotate tires', 'Smoke alarm batteries', 'Clean gutters'],
