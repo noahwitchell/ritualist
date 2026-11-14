@@ -136,14 +136,13 @@ function noteCard(x) {
   if (x.kind === 'reflect') {
     return `<div class="note" style="${cvar(x.cycle)}" data-id="${x.id}">
       <h3>${esc(x.title)}</h3><p>${esc(x.text)}</p>
+      <div class="recent">${dotsFor(C.findTask(S, x.id), now(), Math.min(x.of + 1, 14))}</div>
       <div class="acts">
-        <button data-act="r-keep">Keep it ${esc(C.CYCLE[x.cycle].adj)}</button>
-        ${x.looser ? `<button class="pri" data-act="r-looser" data-cy="${x.looser}">Make it ${esc(C.CYCLE[x.looser].adj)}</button>` : ''}
-        <button data-act="r-smaller">Make it smaller</button>
-        <button data-act="r-retire">Let it go</button>
+        <button data-act="r-keep">Noted</button>
+        <button data-act="r-adjust">Adjust</button>
       </div></div>`;
   }
-  return `<div class="note praise" data-id="${x.id}" data-key="${esc(x.title)}"><button class="x" data-act="dismiss" aria-label="Dismiss">×</button><h3>${esc(x.title)}</h3><p>${esc(x.text)}</p></div>`;
+  return `<div class="note praise" data-id="${x.id}" data-key="${esc(x.title)}"><button class="x" data-act="dismiss" aria-label="Dismiss">×</button><h3>${esc(x.title)}</h3>${x.text ? `<p>${esc(x.text)}</p>` : ''}</div>`;
 }
 
 const dismissKey = x => `${x.kind}:${x.id}:${x.title}`;
@@ -277,9 +276,10 @@ function taskSheet(id, mode) {
   if (!t) return;
   const c = C.CYCLE[t.cycle];
   const rate = C.rateOf(t, n, t.cycle === 'day' ? 30 : 12);
-  const smaller = mode === 'smaller';
+  // Opened from a check-in: whatever gets changed here counts as the answer to it.
+  const fromCheckIn = mode === 'check-in';
+  const opened = S.events.length;
   openSheet(`<div style="${cvar(t.cycle)}" data-id="${t.id}">
-    ${smaller ? `<h2>Make it smaller</h2><p class="muted" style="margin:-8px 0 12px">A smaller version you'll actually do beats a big one you skip. "Clean the kitchen" can become "Wipe the counters".</p>` : ''}
     <input class="field" id="f-title" value="${esc(t.title)}" autocomplete="off" enterkeyhint="done">
     <div class="btns" style="margin-top:10px"><button class="toggle-row" data-act="star"><span>Priority</span><span class="star" style="font-size:18px">${t.star ? '★' : '☆'}</span></button></div>
     <div class="lbl">Repeats</div>
@@ -298,12 +298,13 @@ function taskSheet(id, mode) {
       <button class="btn danger hold" data-hold="delete-task">Hold to delete forever</button>
     </div></div>`, () => {
     const v = sheetBody.querySelector('#f-title')?.value;
-    const before = S.events.length;
     C.renameTask(S, id, v, now());
-    if (smaller && S.events.length > before) { S.events[S.events.length - 1].via = 'reflection'; C.snoozeReflection(S, id, now()); C.unlock(S, now()); }
+    if (fromCheckIn && S.events.length > opened) {
+      for (const e of S.events.slice(opened)) e.via = 'reflection';
+      C.snoozeReflection(S, id, now()); C.unlock(S, now());
+    }
     commit();
   });
-  if (smaller) { const f = sheetBody.querySelector('#f-title'); f.focus(); f.select(); }
 }
 
 function itemSheet(itemId) {
@@ -531,22 +532,15 @@ app.addEventListener('click', async e => {
       C.addTask(S, b.dataset.title, cy, now()); commit(); renderPage(cy); paintStrip();
       break;
     }
-    case 'r-keep': C.snoozeReflection(S, reflectTarget(b), now()); commit(); render(); toast('Kept as is. I\'ll check back later.'); break;
-    case 'r-looser': {
-      const id = reflectTarget(b), cy = b.dataset.cy;
-      C.moveTask(S, id, cy, now(), 'reflection'); commit(); afterTick({});
-      toast(`Moved to ${C.CYCLE[cy].name.toLowerCase()}. One less thing to chase every ${C.CYCLE[C.CYCLE_IDS[C.CYCLE_IDS.indexOf(cy) - 1]].unit}.`);
-      render(); break;
-    }
-    case 'r-smaller': taskSheet(reflectTarget(b), 'smaller'); break;
-    case 'r-retire': C.retireTask(S, reflectTarget(b), now(), 'reflection'); commit(); afterTick({}); toast('Let go. You can bring it back from Progress.'); render(); break;
+    case 'r-keep': C.snoozeReflection(S, reflectTarget(b), now()); commit(); render(); break;
+    case 'r-adjust': taskSheet(reflectTarget(b), 'check-in'); break;
     case 'dismiss': { const card = b.closest('.note'); ui.dismissed[`praise:${card.dataset.id}:${card.dataset.key}`] = C.ymd(C.today(now())); saveUI(ui); render(); break; }
     case 'open-list': ui.listId = b.dataset.id; renderLists(); break;
     case 'lists-home': ui.listId = null; renderLists(); break;
     case 'new-list': listSheet(null); break;
     case 'edit-list': listSheet(ui.listId); break;
     case 'clear-done': C.clearDone(S, ui.listId); commit(); renderLists(); break;
-    case 'restore': C.restoreTask(S, b.closest('[data-id]').dataset.id, now()); commit(); toast('Welcome back.'); render(); break;
+    case 'restore': C.restoreTask(S, b.closest('[data-id]').dataset.id, now()); commit(); toast('Back on the list.'); render(); break;
   }
 });
 

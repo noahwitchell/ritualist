@@ -353,3 +353,5 @@ textarea.field { min-height: 70px; resize: vertical; font-size: 15px; }
 .ring .lbl small { font-family: var(--text); }
 .times input { font-size: 15px; }
 .times input::-webkit-calendar-picker-indicator { display: none; }
+.note .recent { margin-top: 10px; }
+.note .recent .dots i { width: 9px; height: 9px; border-radius: 5px; }

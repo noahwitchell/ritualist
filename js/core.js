@@ -160,10 +160,10 @@
     if (cleared) {
       const n = tasksIn(s, t.cycle).length;
       if (t.cycle === 'day') return n > 1 ? `You crushed your daily list today. All ${n} done.` : 'Daily list done. Nice work.';
-      return `${c.name} list all done${n > 1 ? `: ${n} of ${n}` : ''}. Well handled.`;
+      return `${c.name} list all done${n > 1 ? `: ${n} of ${n}` : ''}.`;
     }
-    if (comeback) return `${t.title} is back on track. Good to see it.`;
-    if (MILESTONES[t.cycle].includes(streak)) return `${t.title}: ${streak} ${c.units} in a row. Keep it up.`;
+    if (comeback) return `${t.title}: done again.`;
+    if (MILESTONES[t.cycle].includes(streak)) return `${t.title}: ${streak} ${c.units} in a row.`;
     return null;
   }
 
@@ -289,15 +289,14 @@
     if (ps.length < rule.n) return null;
     const misses = ps.filter(p => !p.done).length;
     if (misses < rule.miss) return null;
+    // Just the facts, no verdict or advice: what happened, and the longer view.
     const c = CYCLE[t.cycle];
-    const span = rule.n === 1 ? `last ${c.unit}` : `${misses} of the last ${rule.n} ${c.units}`;
-    const looserCycle = looser(t.cycle);
-    return {
-      kind: 'reflect', id: t.id, cycle: t.cycle, misses, of: rule.n,
-      title: rule.n === 1 ? `${t.title} slipped by ${span}.` : `${t.title} slipped ${span}.`,
-      text: `Is ${c.adj} the right rhythm for it? It could repeat less often, get smaller, or go.`,
-      looser: looserCycle,
-    };
+    const done = rule.n - misses;
+    const all = pastPeriods(t, now, 100000);
+    const allDone = all.filter(p => p.done).length;
+    const recent = rule.n === 1 ? `Not done last ${c.unit}.` : `Done ${done} of the last ${rule.n} ${c.units}.`;
+    const longer = all.length > rule.n ? ` ${allDone} of ${all.length} since you added it.` : '';
+    return { kind: 'reflect', id: t.id, cycle: t.cycle, misses, of: rule.n, title: t.title, text: recent + longer };
   }
 
   const PRAISE_MIN = { day: 3, week: 3, month: 3, quarter: 2, half: 2, year: 2 };
@@ -308,15 +307,15 @@
     const streak = streakOf(t, now);
     if (streak >= PRAISE_MIN[t.cycle]) {
       const best = bestStreakOf(t, now);
-      const extra = best > streak ? ` Your best is ${best}.` : streak > 3 ? ' Your best run yet.' : '';
-      return { kind: 'praise', id: t.id, cycle: t.cycle, score: streak, title: `${t.title}: ${streak} ${c.units} running.`, text: `Good job, keep it up.${extra}` };
+      const text = best > streak ? `Longest run: ${best}.` : streak > 3 ? 'Longest run so far.' : '';
+      return { kind: 'praise', id: t.id, cycle: t.cycle, score: streak, title: `${t.title}: ${streak} ${c.units} in a row`, text };
     }
     if (t.cycle === 'day') {
       const last = rateOf(t, now, 7), prev = pastPeriods(t, now, 14).slice(7);
       if (last && last.of === 7 && prev.length === 7) {
         const before = prev.filter(p => p.done).length;
         if (last.done - before >= 3) {
-          return { kind: 'praise', id: t.id, cycle: 'day', score: last.done, title: `${t.title} is on the way up.`, text: `${last.done} of the last 7 days, up from ${before} the week before.` };
+          return { kind: 'praise', id: t.id, cycle: 'day', score: last.done, title: `${t.title}: ${last.done} of the last 7 days`, text: `Up from ${before} the week before.` };
         }
       }
     }
@@ -429,7 +428,7 @@
     { id: 'quarter', icon: 'Q', name: 'Quarter squared', text: 'Every quarterly task done in one quarter.' },
     { id: 'year', icon: 'Y', name: 'Year in the books', text: 'Every yearly task done in one year.' },
     { id: 'comeback', icon: '↺', name: 'Comeback', text: 'Picked a task back up after missing it 3 times.' },
-    { id: 'honest', icon: '◇', name: 'Honest look', text: 'Rethought a task that kept slipping.' },
+    { id: 'honest', icon: '◇', name: 'Honest look', text: 'Changed a task from a check-in.' },
     { id: 'ticks100', icon: '♦', name: '100 ticks', text: '100 tasks checked off.' },
     { id: 'ticks1000', icon: '♛', name: '1,000 ticks', text: '1,000 tasks checked off.' },
     { id: 'errands', icon: '🛒', name: 'Errand runner', text: '25 things crossed off your lists.' },
@@ -589,7 +588,7 @@
 
     if (slot === 'midday') {
       if (!day.length) return { title: 'Midday check-in', body: summaryOfOthers(others) || 'Nothing on the lists right now.', slot };
-      if (!left.length) return { title: 'Midday check-in · all done', body: `All ${day.length} done already. You're crushing it.`, slot };
+      if (!left.length) return { title: 'Midday check-in · all done', body: `All ${day.length} done already.`, slot };
       return { title: `Midday check-in · ${done} of ${day.length} done`, body: `Still to go: ${names(left, 4)}.`, slot };
     }
 

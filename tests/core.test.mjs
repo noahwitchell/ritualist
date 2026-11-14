@@ -59,8 +59,12 @@ test('slipping 4 of the last 5 days asks for a rethink', () => {
   const r = C.reflectionFor(t, at('2026-11-06'));
   assert.ok(r);
   assert.equal(r.misses, 4);
-  assert.equal(r.looser, 'week');
-  assert.match(r.title, /Dishes slipped 4 of the last 5 days/);
+  assert.equal(r.title, 'Dishes');
+  assert.equal(r.text, 'Done 1 of the last 5 days.');
+  // Neutral: no verdicts, no advice.
+  assert.doesNotMatch(r.title + r.text, /slip|should|try|smaller|weekly|\?/i);
+  const later = C.reflectionFor(t, at('2026-11-09'));
+  assert.equal(later.text, 'Done 0 of the last 5 days. 1 of 8 since you added it.');
   C.snoozeReflection(s, t.id, at('2026-11-06'));
   assert.equal(C.reflectionFor(t, at('2026-11-07')), null, 'kept: quiet for a while');
   assert.ok(C.reflectionFor(t, at('2026-11-12')), 'and asks again later');
@@ -73,7 +77,8 @@ test('weekly slip and praise', () => {
   const u = C.addTask(s, 'Call mom', 'week', at('2026-10-05'));
   for (const d of ['2026-10-06', '2026-10-13', '2026-10-20']) C.toggleTask(s, u.id, at(d));
   const p = C.praiseFor(u, at('2026-10-27'));
-  assert.match(p.title, /Call mom: 3 weeks running/);
+  assert.equal(p.title, 'Call mom: 3 weeks in a row');
+  assert.doesNotMatch(p.text, /good job|keep it up/i);
 });
 
 test('moving a task keeps its old history honest', () => {
