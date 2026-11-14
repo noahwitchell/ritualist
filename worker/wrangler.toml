@@ -1,0 +1,15 @@
+name = "cadence-reminders"
+main = "index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+VAPID_PUBLIC = "BNAIiw93D3qWenKw0QSlMCMFrOTABWnuREiLBd_tUfX_jp3RNhugLeFpu4PrG54EHyWon0KdeT61FsNcDKSNPSM"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cadence"
+database_id = "8d284bee-c461-49b4-8858-279b5a0c7e4b"
