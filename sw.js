@@ -1,7 +1,7 @@
 // Offline cache + reminders. A push arrives empty; this worker reads the lists the app
 // saved to Cache Storage and writes the reminder itself, so list contents never leave the phone.
 importScripts('js/core.js');
-const CACHE = 'ritualist-v5';
+const CACHE = 'ritualist-v6';
 const DATA = 'ritualist-data';
 
 self.addEventListener('install', () => self.skipWaiting());

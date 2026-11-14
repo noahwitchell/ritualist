@@ -317,7 +317,7 @@ function itemSheet(itemId) {
     <textarea class="field" id="f-note" placeholder="Size, link, who it's for…">${esc(it.note)}</textarea>
     <div class="lbl">Make it repeat</div>
     <div class="seg">${C.CYCLES.map(x => `<button data-act="item-repeat" data-cy="${x.id}" style="${cvar(x.id)}">${x.name}</button>`).join('')}</div>
-    ${others.length ? `<div class="lbl">Move to</div><div class="chips" style="justify-content:flex-start;padding:0">${others.map(o => `<button class="chip" data-act="item-move" data-to="${o.id}">${o.icon} ${esc(o.name)}</button>`).join('')}</div>` : ''}
+    ${others.length ? `<div class="lbl">Move to</div><div class="chips" style="justify-content:flex-start;padding:0">${others.map(o => `<button class="chip" data-act="item-move" data-to="${o.id}">${o.icon ? listIcon(o) + ' ' : ''}${esc(o.name)}</button>`).join('')}</div>` : ''}
     <div class="btns">
       <button class="btn pri" data-act="close">Done</button>
       <button class="btn danger" data-act="item-delete">Delete</button>
@@ -328,6 +328,13 @@ function itemSheet(itemId) {
   });
 }
 
+// A list's icon is an emoji, a colour dot ('dot:<colour>') or nothing ('').
+const DOTS = { orange: 'day', green: 'week', blue: 'month', purple: 'quarter', pink: 'half', gold: 'year' };
+function listIcon(l) {
+  if (!l.icon) return '';
+  if (l.icon.startsWith('dot:')) return `<i class="ldot" style="background:var(--${DOTS[l.icon.slice(4)] || 'muted'})"></i>`;
+  return esc(l.icon);
+}
 const EMOJI = ['📝', '💭', '🛒', '🎁', '🎄', '🎂', '🏠', '🔧', '📚', '🎬', '✈️', '🍳', '💊', '💼', '🌱', '🐾', '💡', '⭐️'];
 function listSheet(id) {
   const l = id ? C.findList(S, id) : null;
@@ -335,7 +342,11 @@ function listSheet(id) {
   openSheet(`<h2>${l ? 'List' : 'New list'}</h2>
     <input class="field" id="f-name" value="${esc(l ? l.name : '')}" placeholder="Name it: Christmas, Hardware store…" autocomplete="off">
     <div class="lbl">Icon</div>
-    <div class="emojis">${EMOJI.map(e => `<button data-act="pick-emoji" data-e="${e}" class="${e === icon ? 'on' : ''}">${e}</button>`).join('')}</div>
+    <div class="emojis">
+      <button data-act="pick-emoji" data-e="" class="none${icon ? '' : ' on'}" aria-label="No icon">None</button>
+      ${Object.entries(DOTS).map(([k, v]) => `<button data-act="pick-emoji" data-e="dot:${k}" class="${icon === 'dot:' + k ? 'on' : ''}" aria-label="${k}"><i class="ldot" style="background:var(--${v})"></i></button>`).join('')}
+    </div>
+    <div class="emojis" style="margin-top:6px">${EMOJI.map(e => `<button data-act="pick-emoji" data-e="${e}" class="${e === icon ? 'on' : ''}">${e}</button>`).join('')}</div>
     <div class="btns">
       <button class="btn pri" data-act="list-save">${l ? 'Done' : 'Create list'}</button>
       ${l ? '<button class="btn danger hold" data-hold="list-delete">Hold to delete this list</button>' : ''}
@@ -351,25 +362,28 @@ function renderLists() {
   const v = app.querySelector('[data-view="lists"]');
   if (ui.listId && !C.findList(S, ui.listId)) ui.listId = null;
   if (!ui.listId) {
+    v.style.removeProperty('--c');
     v.innerHTML = `<header class="head"><h1>Lists</h1></header>
       <div class="scroll"><p class="muted" style="margin:4px 4px 14px">Lists with no schedule: brain dumps, groceries, wish lists.</p>
       ${S.lists.length ? `<div class="card lists">${S.lists.map(l => {
         const open = l.items.filter(i => !i.done).length;
-        return `<button class="list-row" data-act="open-list" data-id="${l.id}"><span class="ic">${l.icon}</span><span class="nm">${esc(l.name)}</span><span class="ct">${open || ''}</span><span class="chev">›</span></button>`;
+        return `<button class="list-row" data-act="open-list" data-id="${l.id}">${l.icon ? `<span class="ic">${listIcon(l)}</span>` : ''}<span class="nm">${esc(l.name)}</span><span class="ct">${open || ''}</span><span class="chev">›</span></button>`;
       }).join('')}</div>` : '<div class="empty"><b>Nothing here yet.</b>Start a list for whatever is on your mind.</div>'}
       <button class="btn pri new-list" data-act="new-list">+ New list</button></div>`;
     return;
   }
   const l = C.findList(S, ui.listId);
+  const tint = l.icon?.startsWith('dot:') ? DOTS[l.icon.slice(4)] || 'month' : 'month';
+  v.style.setProperty('--c', `var(--${tint})`);
   const active = l.items.filter(i => !i.done), done = l.items.filter(i => i.done).sort((a, b) => a.doneAt - b.doneAt);
   const keepFocus = document.activeElement?.closest?.('[data-view="lists"] .add input');
   const row = it => `<li class="row${it.done ? ' is-done' : ''}" data-id="${it.id}"><button class="check" data-act="tick-item" aria-label="Done"></button>
     <button class="label" data-act="edit-item"><span><span class="t">${esc(it.title)}</span>${it.note ? `<span class="note-line">${esc(it.note)}</span>` : ''}</span></button></li>`;
   v.innerHTML = `<header class="head" style="flex-direction:column;align-items:stretch;gap:4px">
       <div style="display:flex;justify-content:space-between;align-items:center"><button class="back" data-act="lists-home">‹ Lists</button><button class="icon-btn" data-act="edit-list" aria-label="List options">${ICONS.dots}</button></div>
-      <h1>${l.icon} ${esc(l.name)}</h1></header>
-    <div class="scroll" style="${cvar('month')}">
-      ${!l.items.length ? '<div class="empty"><b>Empty your head here.</b>Type anything as it comes to you. Later, tap an item to make it recurring or move it to another list.</div><div style="height:12px"></div>' : ''}
+      <h1>${l.icon ? listIcon(l) + ' ' : ''}${esc(l.name)}</h1></header>
+    <div class="scroll" style="${cvar(tint)}">
+      ${!l.items.length ? '<div class="empty"><b>Nothing on it yet.</b>Tap an item later to make it recurring or move it to another list.</div><div style="height:12px"></div>' : ''}
       <ul class="items card">${active.map(row).join('')}<li><form class="add${active.length ? '' : ' first'}" data-list="${l.id}"><span class="plus">+</span><input name="t" placeholder="Add an item" autocomplete="off" enterkeyhint="done"></form></li></ul>
       ${done.length ? `<div class="section-label">Done · ${done.length}<button data-act="clear-done">Clear</button></div><ul class="items card done-list">${done.map(row).join('')}</ul>` : ''}
     </div>`;

@@ -497,7 +497,7 @@
   function addList(s, name, icon, now) {
     name = String(name || '').trim();
     if (!name) return null;
-    const l = { id: newId(now), name, icon: icon || '📝', items: [] };
+    const l = { id: newId(now), name, icon: icon ?? '📝', items: [] };
     s.lists.push(l);
     return l;
   }
