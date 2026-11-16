@@ -192,3 +192,32 @@ test('normalize keeps data and fills gaps', () => {
   assert.equal(s.tasks[0].spans[0].from, '2026-11-01');
   assert.equal(s.settings.reminders.morning, '07:30');
 });
+
+test('one-off to-dos', () => {
+  const s = C.emptyState();
+  assert.deepEqual(s.todos, []);
+  assert.deepEqual(C.normalize({ tasks: [] }).todos, [], 'older saves get an empty to-do list');
+  const a = C.addTodo(s, 'Return library books', 15, at('2026-11-01'));
+  const b = C.addTodo(s, 'Fix the gate', 60, at('2026-11-01'));
+  C.addTodo(s, 'Email the landlord', 0, at('2026-11-01'));
+  assert.equal(C.addTodo(s, 'x', 7, at('2026-11-01')).size, 0, 'only preset sizes');
+  C.deleteTodo(s, s.todos[3].id);
+  assert.deepEqual(C.todoSummary(s), { open: 3, minutes: 75, unsized: 1 });
+  assert.equal(C.minutesText(75), '1 h 15 min');
+  C.toggleTodo(s, a.id, at('2026-11-02'));
+  assert.equal(s.counters.todosDone, 1);
+  assert.deepEqual(C.todoSummary(s), { open: 2, minutes: 60, unsized: 1 });
+  C.setTodoSize(s, b.id, 30);
+  assert.equal(C.findTodo(s, b.id).size, 30);
+  C.clearDoneTodos(s);
+  assert.equal(s.todos.length, 2);
+  const t = C.todoToTask(s, b.id, 'month', at('2026-11-03'));
+  assert.equal(t.cycle, 'month');
+  assert.equal(s.todos.length, 1);
+  const l = C.addList(s, 'Brain dump', '', at('2026-11-01'));
+  const it = C.addItem(s, l.id, 'Book a plumber', at('2026-11-01'));
+  C.itemToTodo(s, l.id, it.id, at('2026-11-02'));
+  assert.equal(l.items.length, 0);
+  assert.equal(s.todos.at(-1).title, 'Book a plumber');
+  assert.match(C.brief(s, 'morning', at('2026-11-03')).body, /To do: 2\./);
+});

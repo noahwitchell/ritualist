@@ -29,12 +29,17 @@ const ICONS = {
   dots: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
 };
 
+// The Recurring tab's pages: one-off to-dos first, then the six cycles.
+const PAGES = ['todo', ...C.CYCLE_IDS];
+const pageName = id => id === 'todo' ? 'To do' : C.CYCLE[id].name;
+const pageTab = id => id === 'todo' ? 'To do' : C.CYCLE[id].tab;
+
 function shell() {
   app.innerHTML = `
     <section class="view" data-view="cycles">
       <header class="head"><h1 id="cycle-title">Daily</h1></header>
-      <nav class="strip">${C.CYCLES.map(c => `<button data-act="goto" data-cy="${c.id}" style="${cvar(c.id)}">${c.tab}<span class="dot hidden"></span></button>`).join('')}</nav>
-      <div class="pager">${C.CYCLES.map(c => `<section class="page" data-cy="${c.id}" style="${cvar(c.id)}"></section>`).join('')}</div>
+      <nav class="strip">${PAGES.map(id => `<button data-act="goto" data-cy="${id}" style="${cvar(id)}">${pageTab(id)}<span class="dot hidden"></span></button>`).join('')}</nav>
+      <div class="pager">${PAGES.map(id => `<section class="page" data-cy="${id}" style="${cvar(id)}"></section>`).join('')}</div>
     </section>
     <section class="view hidden" data-view="lists"></section>
     <section class="view hidden" data-view="progress"></section>
@@ -50,11 +55,11 @@ function shell() {
   pager.addEventListener('scroll', () => {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      const i = Math.max(0, Math.min(5, Math.round(pager.scrollLeft / pager.clientWidth)));
+      const i = Math.max(0, Math.min(PAGES.length - 1, Math.round(pager.scrollLeft / pager.clientWidth)));
       // While a tap-driven slide is on its way, the pages it passes over don't count;
       // otherwise the title flips back to the old cycle mid-slide.
-      if (sliding) { if (i === C.CYCLE_IDS.indexOf(sliding)) endSlide(); return; }
-      const cy = C.CYCLE_IDS[i];
+      if (sliding) { if (i === PAGES.indexOf(sliding)) endSlide(); return; }
+      const cy = PAGES[i];
       if (cy !== ui.cycle) { ui.cycle = cy; saveUI(ui); paintStrip(); }
     });
   }, { passive: true });
@@ -63,10 +68,12 @@ function shell() {
 
 function paintStrip() {
   const n = now();
-  app.querySelector('#cycle-title').textContent = C.CYCLE[ui.cycle].name;
+  if (!PAGES.includes(ui.cycle)) ui.cycle = 'day';
+  app.querySelector('#cycle-title').textContent = pageName(ui.cycle);
   app.querySelector('[data-view="cycles"]').style.setProperty('--c', `var(--${ui.cycle})`);
   for (const b of app.querySelectorAll('.strip button')) {
     b.classList.toggle('on', b.dataset.cy === ui.cycle);
+    if (b.dataset.cy === 'todo') continue;
     const p = C.cycleProgress(S, b.dataset.cy, n);
     b.querySelector('.dot').classList.toggle('hidden', !(p.total && p.done < p.total && b.dataset.cy !== 'day' && C.daysLeft(b.dataset.cy, n) <= 2));
   }
@@ -81,7 +88,7 @@ function goto(cy, smooth = true) {
   ui.cycle = cy; saveUI(ui);
   if (smooth) { sliding = cy; clearTimeout(slideTimer); slideTimer = setTimeout(endSlide, 1200); }
   const pager = app.querySelector('.pager');
-  pager.scrollTo({ left: C.CYCLE_IDS.indexOf(cy) * pager.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
+  pager.scrollTo({ left: PAGES.indexOf(cy) * pager.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
   paintStrip();
 }
 
@@ -94,7 +101,7 @@ function setTab(tab) {
 }
 
 function render() {
-  if (ui.tab === 'cycles') { for (const c of C.CYCLE_IDS) renderPage(c); paintStrip(); }
+  if (ui.tab === 'cycles') { renderTodo(); for (const c of C.CYCLE_IDS) renderPage(c); paintStrip(); }
   if (ui.tab === 'lists') renderLists();
   if (ui.tab === 'progress') renderProgress();
   if (ui.tab === 'settings') renderSettings();
@@ -188,11 +195,75 @@ function renderPage(cy) {
   if (keepFocus) { const i = page.querySelector('.add input'); i.value = draft; i.focus(); }
 }
 
+// ---------- one-off to-dos ----------
+
+// Time presets: colour says how big a job is at a glance.
+const sizeVar = m => `var(--t${m})`;
+const sizeLabel = m => C.SIZES.find(x => x.min === m)?.label || '';
+const sizeShort = m => (m === 60 ? '1h' : `${m}m`);
+let nextSize = 0; // preset picked in the add row, used for the next to-do typed there
+
+function todoRow(t) {
+  return `<li class="row todo${t.done ? ' is-done' : ''}" data-id="${t.id}" style="${t.size ? `--c:${sizeVar(t.size)}` : ''}">
+    <button class="check" data-act="tick-todo" aria-label="${t.done ? 'Mark not done' : 'Mark done'}"></button>
+    <button class="label" data-act="edit-todo"><span class="t">${esc(t.title)}</span>${t.star ? '<span class="star">★</span>' : ''}</button>
+    ${t.size ? `<span class="size" style="--z:${sizeVar(t.size)}">${sizeShort(t.size)}</span>` : ''}</li>`;
+}
+
+function renderTodo() {
+  const page = app.querySelector('.page[data-cy="todo"]');
+  const keepFocus = document.activeElement?.closest?.('.page[data-cy="todo"] .add input');
+  const draft = keepFocus ? document.activeElement.value : '';
+  const rank = t => (t.size || 999);
+  const active = S.todos.filter(t => !t.done).sort((a, b) => b.star - a.star || rank(a) - rank(b) || a.created - b.created);
+  const done = S.todos.filter(t => t.done).sort((a, b) => a.doneAt - b.doneAt);
+  const sum = C.todoSummary(S);
+  let html = `<div class="period"><b>Anytime</b> no schedule${sum.open ? `<span class="count">${sum.open} open${sum.minutes ? ` · about ${C.minutesText(sum.minutes)}` : ''}</span>` : ''}</div>`;
+  html += `<div class="sizes-key">${C.SIZES.map(z => `<span style="--z:${sizeVar(z.min)}"><i></i>${z.label}</span>`).join('')}</div>`;
+  if (!S.todos.length) html += `<div class="empty"><b>Things to get done, once.</b>No schedule, no repeats. Pick a colour for how long each one takes.</div><div style="height:14px"></div>`;
+  html += `<ul class="items card">${active.map(todoRow).join('')}
+    <li><form class="add todo-add${active.length ? '' : ' first'}" data-todo="1" style="${nextSize ? `--c:${sizeVar(nextSize)}` : ''}"><span class="plus">+</span><input name="t" placeholder="Add a to-do" autocomplete="off" enterkeyhint="done">
+      <span class="pick">${C.SIZES.map(z => `<button type="button" data-act="next-size" data-min="${z.min}" class="${nextSize === z.min ? 'on' : ''}" style="--z:${sizeVar(z.min)}" aria-label="${z.label}">${sizeShort(z.min)}</button>`).join('')}</span></form></li></ul>`;
+  if (done.length) html += `<div class="section-label">Done · ${done.length}<button data-act="clear-todos">Clear</button></div><ul class="items card done-list">${done.map(todoRow).join('')}</ul>`;
+  page.innerHTML = html;
+  if (keepFocus) { const i = page.querySelector('.add input'); i.value = draft; i.focus(); }
+}
+
+function todoSheet(id) {
+  const t = C.findTodo(S, id);
+  if (!t) return;
+  openSheet(`<div data-todo-id="${t.id}">
+    <input class="field" id="f-title" value="${esc(t.title)}" autocomplete="off" enterkeyhint="done">
+    <div class="btns" style="margin-top:10px"><button class="toggle-row" data-act="todo-star"><span>Priority</span><span class="star" style="font-size:18px">${t.star ? '★' : '☆'}</span></button></div>
+    <div class="lbl">How long it takes</div>
+    <div class="seg sizes">${[0, ...C.SIZES.map(z => z.min)].map(m => `<button data-act="todo-size" data-min="${m}" class="${(t.size || 0) === m ? 'on' : ''}" style="${m ? `--c:${sizeVar(m)}` : ''}">${m ? sizeLabel(m) : 'Not set'}</button>`).join('')}</div>
+    <div class="lbl">Note</div>
+    <textarea class="field" id="f-note" placeholder="Details, links, who to call…">${esc(t.note || '')}</textarea>
+    <div class="lbl">Make it recurring</div>
+    <div class="seg">${C.CYCLES.map(x => `<button data-act="todo-repeat" data-cy="${x.id}" style="${cvar(x.id)}">${x.name}</button>`).join('')}</div>
+    <div class="btns">
+      <button class="btn pri" data-act="close">Done</button>
+      <button class="btn danger hold" data-hold="delete-todo">Hold to delete</button>
+    </div></div>`, () => {
+    const cur = C.findTodo(S, id);
+    const ti = sheetBody.querySelector('#f-title'), no = sheetBody.querySelector('#f-note');
+    if (cur && ti) { cur.title = ti.value.trim() || cur.title; cur.note = no.value.trim(); commit(); }
+  });
+}
+
 // ---------- ticking ----------
 
 function tick(row, kind) {
   const id = row.dataset.id;
   if (row.classList.contains('ticking')) return;
+  if (kind === 'todo') {
+    const t = C.toggleTodo(S, id, now());
+    if (!t) return;
+    commit();
+    const fresh = C.unlock(S, now()); if (fresh.length) { commit(); toast(`Achievement unlocked: ${fresh.map(a => a.name).join(', ')}`); }
+    if (t.done) animateOut(row, renderTodo); else renderTodo();
+    return;
+  }
   if (kind === 'task') {
     const r = C.toggleTask(S, id, now());
     if (!r) return;
@@ -324,7 +395,9 @@ function itemSheet(itemId) {
     <input class="field" id="f-title" value="${esc(it.title)}" autocomplete="off">
     <div class="lbl">Note</div>
     <textarea class="field" id="f-note" placeholder="Size, link, who it's for…">${esc(it.note)}</textarea>
-    <div class="lbl">Make it repeat</div>
+    <div class="lbl">Make it a task</div>
+    <div class="btns" style="margin-top:0"><button class="btn" data-act="item-todo">Move to To do</button></div>
+    <div class="lbl">Make it recurring</div>
     <div class="seg">${C.CYCLES.map(x => `<button data-act="item-repeat" data-cy="${x.id}" style="${cvar(x.id)}">${x.name}</button>`).join('')}</div>
     ${others.length ? `<div class="lbl">Move to</div><div class="chips" style="justify-content:flex-start;padding:0">${others.map(o => `<button class="chip" data-act="item-move" data-to="${o.id}">${o.icon ? listIcon(o) + ' ' : ''}${esc(o.name)}</button>`).join('')}</div>` : ''}
     <div class="btns">
@@ -587,6 +660,16 @@ app.addEventListener('click', async e => {
     case 'tick-item': tick(row, 'item'); break;
     case 'edit-task': taskSheet(row.dataset.id); break;
     case 'edit-item': itemSheet(row.dataset.id); break;
+    case 'tick-todo': tick(row, 'todo'); break;
+    case 'edit-todo': todoSheet(row.dataset.id); break;
+    case 'clear-todos': C.clearDoneTodos(S); commit(); renderTodo(); break;
+    case 'next-size': {
+      const m = +b.dataset.min; nextSize = nextSize === m ? 0 : m;
+      const f = b.closest('form'); f.style.cssText = nextSize ? `--c:${sizeVar(nextSize)}` : '';
+      for (const x of f.querySelectorAll('[data-act="next-size"]')) x.classList.toggle('on', +x.dataset.min === nextSize);
+      f.querySelector('input').focus();
+      break;
+    }
     case 'suggest': {
       const cy = b.closest('.page').dataset.cy;
       C.addTask(S, b.dataset.title, cy, now()); commit(); renderPage(cy); paintStrip();
@@ -625,6 +708,29 @@ onBoth('click', async e => {
       break;
     }
     case 'retire': C.retireTask(S, id, now()); commit(); sheet._onClose = null; closeSheet(); toast('Let go. You can bring it back from Progress.'); break;
+    case 'todo-star': {
+      const t = C.findTodo(S, b.closest('[data-todo-id]').dataset.todoId); t.star = !t.star; commit();
+      b.querySelector('.star').textContent = t.star ? '★' : '☆'; break;
+    }
+    case 'todo-size': {
+      C.setTodoSize(S, b.closest('[data-todo-id]').dataset.todoId, +b.dataset.min); commit();
+      for (const x of sheetBody.querySelectorAll('[data-act="todo-size"]')) x.classList.toggle('on', x === b);
+      break;
+    }
+    case 'todo-repeat': {
+      sheet._onClose?.(); sheet._onClose = null;
+      const t = C.todoToTask(S, b.closest('[data-todo-id]').dataset.todoId, b.dataset.cy, now()); commit();
+      closeSheet();
+      if (t) toast(`${t.title} now repeats ${C.CYCLE[t.cycle].name.toLowerCase()}.`);
+      break;
+    }
+    case 'item-todo': {
+      const itemId = b.closest('[data-item]').dataset.item;
+      sheet._onClose?.(); sheet._onClose = null;
+      const t = C.itemToTodo(S, ui.listId, itemId, now()); commit(); closeSheet();
+      if (t) toast(`${t.title} is on your to-do list.`);
+      break;
+    }
     case 'item-repeat': {
       const itemId = b.closest('[data-item]').dataset.item;
       const t = C.itemToTask(S, ui.listId, itemId, b.dataset.cy, now()); commit();
@@ -719,6 +825,7 @@ onBoth('pointerdown', e => {
   holdTimer = setTimeout(() => {
     b.classList.remove('holding');
     const what = b.dataset.hold, id = b.closest('[data-id]')?.dataset.id;
+    if (what === 'delete-todo') { C.deleteTodo(S, b.closest('[data-todo-id]').dataset.todoId); commit(); sheet._onClose = null; closeSheet(); }
     if (what === 'delete-task') { C.deleteTask(S, id); commit(); sheet._onClose = null; closeSheet(); toast('Deleted.'); }
     if (what === 'list-delete') { S.lists = S.lists.filter(l => l.id !== sheet._listId); ui.listId = null; commit(); sheet._onClose = null; closeSheet(); }
     if (what === 'backup-delete') {
@@ -739,6 +846,7 @@ app.addEventListener('submit', e => {
   const f = e.target, input = f.querySelector('input');
   const title = input.value.trim();
   if (!title) { input.blur(); return; }
+  if (f.dataset.todo) { C.addTodo(S, title, nextSize, now()); commit(); input.value = ''; renderTodo(); app.querySelector('.page[data-cy="todo"] .add input')?.focus(); return; }
   if (f.dataset.cy) { C.addTask(S, title, f.dataset.cy, now()); commit(); input.value = ''; renderPage(f.dataset.cy); paintStrip(); }
   else { C.addItem(S, f.dataset.list, title, now()); commit(); input.value = ''; renderLists(); }
   const again = (f.dataset.cy ? app.querySelector(`.page[data-cy="${f.dataset.cy}"] .add input`) : app.querySelector('[data-view="lists"] .add input'));

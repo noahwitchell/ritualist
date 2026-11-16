@@ -80,9 +80,10 @@
       v: 1,
       tasks: [],      // repeating tasks: { id, title, cycle, spans:[{cycle,from,to}], done:{key:ts}, star, retired, snooze, created }
       lists: [],      // free lists, no schedule: { id, name, icon, items }
+      todos: [],      // one-off tasks: { id, title, note, size (minutes, 0 = unset), star, done, doneAt, created }
       events: [],     // how the lists changed: { t, type, id, title, from, to, via }
       unlocked: {},   // achievement id -> ymd first earned
-      counters: { itemsChecked: 0 },
+      counters: { itemsChecked: 0, todosDone: 0 },
       settings: { reminders: { morning: '07:30', midday: '12:30', evening: '18:00' } },
     };
   }
@@ -97,6 +98,7 @@
     const STARTERS = { inbox: 'Brain dump', groceries: 'Groceries', wishes: 'Wish list' };
     s.lists = s.lists.filter(l => !(STARTERS[l.id] === l.name && !(l.items || []).length));
     s.events = Array.isArray(raw.events) ? raw.events : [];
+    s.todos = Array.isArray(raw.todos) ? raw.todos : [];
     s.unlocked = raw.unlocked || {};
     s.counters = { ...base.counters, ...raw.counters };
     s.settings = { ...base.settings, ...raw.settings, reminders: { ...base.settings.reminders, ...(raw.settings || {}).reminders } };
@@ -535,6 +537,68 @@
     b.items.push(it);
   }
 
+  // ---------- one-off to-dos ----------
+
+  // How long a to-do will take. The person picks; colours live in the app.
+  const SIZES = [
+    { min: 5, label: '5 min' },
+    { min: 15, label: '15 min' },
+    { min: 30, label: '30 min' },
+    { min: 60, label: '1 hour' },
+  ];
+
+  function addTodo(s, title, size, now) {
+    title = String(title || '').trim();
+    if (!title) return null;
+    const t = { id: newId(now), title, note: '', size: SIZES.some(x => x.min === size) ? size : 0, star: false, done: false, doneAt: null, created: now };
+    s.todos.push(t);
+    return t;
+  }
+
+  const findTodo = (s, id) => s.todos.find(t => t.id === id);
+
+  function toggleTodo(s, id, now) {
+    const t = findTodo(s, id); if (!t) return null;
+    t.done = !t.done; t.doneAt = t.done ? now : null;
+    if (t.done) s.counters.todosDone++;
+    return t;
+  }
+
+  function setTodoSize(s, id, size) { const t = findTodo(s, id); if (t) t.size = SIZES.some(x => x.min === size) ? size : 0; }
+  function deleteTodo(s, id) { s.todos = s.todos.filter(t => t.id !== id); }
+  function clearDoneTodos(s) { s.todos = s.todos.filter(t => !t.done); }
+
+  // A to-do that turns out to repeat. It leaves the to-do list.
+  function todoToTask(s, id, cycle, now) {
+    const t = findTodo(s, id); if (!t) return null;
+    deleteTodo(s, id);
+    const n = addTask(s, t.title, cycle, now);
+    if (n) n.star = !!t.star;
+    return n;
+  }
+
+  // A list item that's really a task to get done.
+  function itemToTodo(s, listId, itemId, now) {
+    const l = findList(s, listId); const it = l && l.items.find(i => i.id === itemId);
+    if (!it) return null;
+    l.items = l.items.filter(i => i !== it);
+    const t = addTodo(s, it.title, 0, now);
+    if (t) t.note = it.note || '';
+    return t;
+  }
+
+  // Open to-dos and the time they add up to (only the sized ones count toward minutes).
+  function todoSummary(s) {
+    const open = s.todos.filter(t => !t.done);
+    return { open: open.length, minutes: open.reduce((a, t) => a + (t.size || 0), 0), unsized: open.filter(t => !t.size).length };
+  }
+
+  function minutesText(m) {
+    if (m < 60) return `${m} min`;
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h} h ${r} min` : `${h} h`;
+  }
+
   // ---------- the three daily reminders ----------
 
   // Which reminder a push is: with the phone's own times, the one that came due most recently
@@ -582,6 +646,8 @@
         if (o.fresh && o.left.length) lines.push(`New ${CYCLE[o.c].unit}: ${o.left.length} ${CYCLE[o.c].adj} task${o.left.length > 1 ? 's' : ''}.`);
         else if (o.daysLeft === 1 && o.left.length) lines.push(`Last day of the ${CYCLE[o.c].unit}: ${names(o.left, 2)}.`);
       }
+      const td = todoSummary(s);
+      if (td.open) lines.push(`To do: ${td.open}${td.minutes ? ` (about ${minutesText(td.minutes)})` : ''}.`);
       if (!lines.length) lines.push('Nothing scheduled. A clear day.');
       return { title, body: lines.join(' '), slot };
     }
@@ -619,6 +685,7 @@
     dayStats, dayHistory, perfectRun, cycleProgress, months, everSwept,
     earned, unlock,
     findList, addList, addItem, toggleItem, clearDone, itemToTask, moveItem,
+    SIZES, addTodo, findTodo, toggleTodo, setTodoSize, deleteTodo, clearDoneTodos, todoToTask, itemToTodo, todoSummary, minutesText,
     slotFor, brief,
   };
 })(typeof self !== 'undefined' ? self : globalThis);
