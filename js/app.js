@@ -1,5 +1,5 @@
 import './core.js';
-import { load, save, mirror, loadUI, saveUI, requestPersistence, deliverFile } from './store.js';
+import { load, save, mirror, loadUI, saveUI, requestPersistence, deliverFile, rescued, openRescue, clearRescue } from './store.js';
 import * as Push from './push.js';
 import * as Backup from './backup.js';
 
@@ -597,6 +597,7 @@ async function renderSettings() {
     <div class="lbl">What they'll say right now</div>
     ${pv('morning')}${pv('midday')}${pv('evening')}
     ${st.state === 'on' ? '<div class="seg" style="margin-top:10px"><button data-act="preview" data-slot="morning">Test morning</button><button data-act="preview" data-slot="midday">Test midday</button><button data-act="preview" data-slot="evening">Test evening</button></div>' : ''}
+    ${rescueBlock()}
     <div class="lbl">Daily backup</div>
     ${backupBlock()}
     <div class="lbl">Backup file</div>
@@ -640,7 +641,23 @@ function backupBlock() {
 }
 
 // Once a day when the app opens or comes back. Quiet on failure; it tries again next time.
+// Shown only when saved data couldn't be opened after an update (see store.js load).
+function rescueBlock() {
+  const kept = rescued();
+  if (!kept.length) return '';
+  const last = kept[kept.length - 1];
+  const opens = !!openRescue(last);
+  return `<div class="lbl">Older data</div>
+    <p class="muted" style="margin:0 2px 10px">After an update (${ago(last.at)}), the saved lists couldn't be opened. They're kept safe on this phone, and the daily backup is paused so it can't replace them.</p>
+    <div class="btns" style="margin-top:0">
+      ${opens ? '<button class="btn pri" data-act="rescue-back">Bring them back</button>' : ''}
+      <button class="btn" data-act="rescue-save">Save them to Files</button>
+      <button class="btn danger hold" data-hold="rescue-drop">Hold to discard them</button>
+    </div>`;
+}
+
 function dailyBackup() {
+  if (rescued().length) return; // don't let a blank start replace the good copy on the server
   Backup.maybeDaily(S).then(did => { if (did && ui.tab === 'settings') renderSettings(); }).catch(() => {});
 }
 
@@ -792,6 +809,17 @@ onBoth('click', async e => {
       } catch (err) { toast(err.message); }
       break;
     }
+    case 'rescue-save': {
+      const kept = rescued();
+      await deliverFile(`ritualist-older-data-${C.ymd(C.today(now()))}.json`, kept[kept.length - 1].raw, 'application/json');
+      break;
+    }
+    case 'rescue-back': {
+      const back = openRescue(rescued().slice(-1)[0]);
+      if (!back || !confirm('Replace what\'s on this phone now with the older lists?')) break;
+      S = back; clearRescue(); commit(); render(); toast('Older lists are back.');
+      break;
+    }
     case 'backup': {
       const d = C.ymd(C.today(now()));
       await deliverFile(`ritualist-backup-${d}.json`, JSON.stringify(S, null, 1), 'application/json');
@@ -832,6 +860,7 @@ onBoth('pointerdown', e => {
       Backup.remove().then(() => { revealKey = false; renderSettings(); toast('Backup deleted. Daily backup is off.'); })
         .catch(err => toast('Couldn\'t delete it: ' + err.message));
     }
+    if (what === 'rescue-drop') { clearRescue(); renderSettings(); toast('Discarded.'); }
     if (what === 'wipe') { S = C.emptyState(); commit(); sheet._onClose = null; closeSheet(); render(); toast('Erased. Fresh start.'); }
   }, 800);
 });

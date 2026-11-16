@@ -5,8 +5,41 @@ const C = globalThis.Core;
 const KEY = 'ritualist.v1';
 const UI_KEY = 'ritualist.ui';
 
+const RESCUE = 'ritualist.rescue';
+
+// Loads the saved lists. If they can't be opened (a bad update), the raw text is set aside in
+// RESCUE before starting blank, so the next save can't overwrite it. Once a later update can
+// read it again, it comes back by itself as long as nothing new has been added since.
 export function load() {
-  try { return C.normalize(JSON.parse(localStorage.getItem(KEY))); } catch { return C.emptyState(); }
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch { return C.emptyState(); }
+  let state;
+  try { state = C.normalize(JSON.parse(raw)); }
+  catch {
+    const kept = rescued();
+    if (!kept.some(r => r.raw === raw)) {
+      try { localStorage.setItem(RESCUE, JSON.stringify([...kept, { at: Date.now(), raw }].slice(-3))); } catch { /* full */ }
+    }
+    state = C.emptyState();
+  }
+  const kept = rescued();
+  if (kept.length && isBlank(state)) {
+    const back = openRescue(kept[kept.length - 1]);
+    if (back) { clearRescue(); return back; }
+  }
+  return state;
+}
+
+const isBlank = s => !s.tasks.length && !s.lists.length && !(s.todos || []).length;
+
+export function rescued() {
+  try { const r = JSON.parse(localStorage.getItem(RESCUE)); return Array.isArray(r) ? r : []; } catch { return []; }
+}
+export function openRescue(r) {
+  try { return C.normalize(JSON.parse(r.raw)); } catch { return null; }
+}
+export function clearRescue() {
+  try { localStorage.removeItem(RESCUE); } catch { /* ignore */ }
 }
 
 let timer = null;
