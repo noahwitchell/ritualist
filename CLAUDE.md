@@ -5,7 +5,7 @@
 - Keep the interface uncluttered: few buttons, one tap to tick, details live in the task sheet.
 - All rules live in `js/core.js` (classic script, exposes globalThis.Core); run `node --test tests/core.test.mjs`
   after changing them.
-- Data is localStorage `ritualist.v1` (tasks, lists, todos). The Tasks tab pages = PAGES: `todo` (one-off to-dos, time sizes 5/15/30/60 → --t5…--t60 colours) then the six cycles. Never change its shape without a migration in `Core.normalize`.
+- Data is localStorage `ritualist.v1` (tasks, lists, todos). The Tasks tab pages = PAGES: `todo` (one-off to-dos, time sizes 5/15/30/60 → --t5…--t60 colours) then the six cycles. Never change its shape without a migration in `Core.normalize`. If load fails, store.js sets the raw text aside in `ritualist.rescue` (auto-restores once readable if nothing new was added; Settings "Older data" otherwise; daily backup pauses meanwhile).
 - Removing data = hold to confirm. Retire ("let it go") keeps history; delete is forever.
 - `push/vapid-private.json` is the push signing key: git-ignored, never commit or print it.
 - Dark only. Fonts (Fraunces display, Figtree text, OFL) live in fonts/; swap via --display/--text in css/app.css.
