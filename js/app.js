@@ -29,7 +29,7 @@ const ICONS = {
   dots: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
 };
 
-// The Recurring tab's pages: one-off to-dos first, then the six cycles.
+// The Tasks tab's pages: one-off to-dos first, then the six cycles.
 const PAGES = ['todo', ...C.CYCLE_IDS];
 const pageName = id => id === 'todo' ? 'To do' : C.CYCLE[id].name;
 const pageTab = id => id === 'todo' ? 'To do' : C.CYCLE[id].tab;
@@ -45,7 +45,7 @@ function shell() {
     <section class="view hidden" data-view="progress"></section>
     <section class="view hidden" data-view="settings"></section>
     <nav class="tabs"><div class="inner">
-      <button data-act="tab" data-tab="cycles">${ICONS.cycles}Recurring</button>
+      <button data-act="tab" data-tab="cycles">${ICONS.cycles}Tasks</button>
       <button data-act="tab" data-tab="lists">${ICONS.lists}Lists</button>
       <button data-act="tab" data-tab="progress">${ICONS.progress}Progress</button>
       <button data-act="tab" data-tab="settings">${ICONS.gearTab}Settings</button>
